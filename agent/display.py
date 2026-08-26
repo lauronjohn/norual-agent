@@ -720,7 +720,7 @@ def build_status_phrase(tool_name: str, args: dict | None, max_len: int = 49) ->
     ``assistant.threads.setStatus`` line) to show what the agent is doing
     right now: ``is running scripts/run_tests.sh…`` instead of a static
     ``is thinking...``.  The phrase is phrased to follow the bot's display
-    name ("Hermes is running …"), so it starts lowercase with "is".
+    name ("Norual is running …"), so it starts lowercase with "is".
 
     Pass ``args=None`` for a verb-only phrase (``is running…``) — used when
     ``display.live_status`` is ``verb`` to keep argument previews out of
@@ -956,7 +956,7 @@ def _emit_inline_diff(diff_text: str, print_fn) -> bool:
 
 
 def _render_inline_unified_diff(diff: str) -> list[str]:
-    """Render unified diff lines in Hermes' inline transcript style."""
+    """Render unified diff lines in Norual' inline transcript style."""
     rendered: list[str] = []
     from_file = None
     to_file = None
@@ -1432,7 +1432,7 @@ def _get_cute_tool_message(
             return _wrap(f"┊ 📄 fetch     {_trunc(domain, 35)}{extra}  {dur}")
         return _wrap(f"┊ 📄 fetch     pages  {dur}")
     if tool_name == "terminal":
-        return _wrap(f"┊ 💻 $         {_trunc(build_tool_preview(tool_name, args) or args.get('command', ''), 42)}  {dur}")
+        return _wrap(f"┊ 💻 $ {_trunc(build_tool_preview(tool_name, args) or args.get('command', ''), 42)}  {dur}")
     if tool_name == "process":
         action = args.get("action", "?")
         sid = args.get("session_id", "")[:12]
@@ -1505,17 +1505,22 @@ def _get_cute_tool_message(
     if tool_name == "memory":
         action = args.get("action", "?")
         target = args.get("target", "")
+        ops = args.get("operations")
+        if isinstance(ops, list) and ops:
+            # Batch form (memory(operations=[...])) carries no single action.
+            label = f"{len(ops)} ops"
+            if target:
+                label += f" ({target})"
+            return _wrap(f"┊ 🧠 memory {label}  {dur}")
         if action == "add":
-            return _wrap(f"┊ 🧠 memory    +{target}: \"{_trunc(args.get('content', ''), 30)}\"  {dur}")
+            return _wrap(f"┊ 🧠 memory +{target}: \"{_trunc(args.get('content', ''), 30)}\"  {dur}")
         elif action == "replace":
-            old = args.get("old_text") or ""
-            old = old if old else "<missing old_text>"
-            return _wrap(f"┊ 🧠 memory    ~{target}: \"{_trunc(old, 20)}\"  {dur}")
+            old = args.get("old_text") or "<missing old_text>"
+            return _wrap(f"┊ 🧠 memory ~{target}: \"{_trunc(old, 20)}\"  {dur}")
         elif action == "remove":
-            old = args.get("old_text") or ""
-            old = old if old else "<missing old_text>"
-            return _wrap(f"┊ 🧠 memory    -{target}: \"{_trunc(old, 20)}\"  {dur}")
-        return _wrap(f"┊ 🧠 memory    {action}  {dur}")
+            old = args.get("old_text") or "<missing old_text>"
+            return _wrap(f"┊ 🧠 memory -{target}: \"{_trunc(old, 20)}\"  {dur}")
+        return _wrap(f"┊ 🧠 memory {action}  {dur}")
     if tool_name == "skills_list":
         return _wrap(f"┊ 📚 skills    list {args.get('category', 'all')}  {dur}")
     if tool_name == "skill_view":
