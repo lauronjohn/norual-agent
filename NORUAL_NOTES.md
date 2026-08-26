@@ -83,6 +83,8 @@ exist via `hermes cron` / the `cronjob` tool — none created (user preference).
 | `hermes_cli/console_engine.py` | `_parser_root()` uses `console_prog()` | Same |
 | `pyproject.toml`, `_parser.py`, `profiles.py` | Added `norual` as a first-class alias (`norual = "hermes_cli.main:main"`) | Console-script names set ×2 |
 | `hermes_cli/oneshot.py` | `run_oneshot` registers the launch directory as the `"default"` task workspace-cwd override (`register_task_env_overrides(..., cwd_source="session")`), mirroring interactive/TUI/ACP/gateway surfaces | Fixes upstream quirk: `norual -z` tools ran in `~` instead of the launch dir |
+| `hermes_cli/skin_engine.py` | norual `banner_hero`: `\[0x1F4D1A]` escaped so Rich renders it as literal text (was leaking as an invalid tag) | Keep the escape if editing the hero |
+| `hermes_cli/banner.py` | Logo now prints when it FITS (`min(95, logo_width + 8)` via `Text.from_markup`), so narrow terminals show the norual logo (was hardcoded 95 cols) | Fork behavior change; upstream uses the 95-col check |
 
 Why `hermes` still exists (user Q): `norual-agent`/`nra` are aliases to the
 same entry point (`hermes_cli.main:main`). The `hermes` binary is kept because

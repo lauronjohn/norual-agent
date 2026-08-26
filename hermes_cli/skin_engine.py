@@ -840,7 +840,7 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
 [#6E0000] ╚═╝  ╚═══╝  ╚═════╝ ╚═╝  ╚═╝  ╚═════╝ ╚═╝  ╚═╝ ╚══════╝[/]""",
         "banner_hero": """[#FF4B4B]▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄[/]
 [#C62828]█ root@norual: ~ $ ./agent --mode full █[/]
-[#8B0000]█ [0x1F4D1A] context loaded · tools armed █[/]
+[#8B0000]█ \[0x1F4D1A] context loaded · tools armed █[/]
 [#6E0000]▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀[/]
 [dim #7A3B3B]root@norual:~$[/]""",
     },

@@ -1261,8 +1261,19 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
 
     console.print()
     term_width = shutil.get_terminal_size().columns
-    if term_width >= 95:
-        _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO
+    # norual-agent fork: print the skin logo when it FITS instead of at a
+    # hardcoded 95 columns — narrow terminals never saw the (often narrow)
+    # custom skin logos. The needed width is the longest visible line of the
+    # logo (Rich markup stripped), floored so a tiny logo still gets room.
+    _logo = _bskin.banner_logo if _bskin and hasattr(_bskin, 'banner_logo') and _bskin.banner_logo else HERMES_AGENT_LOGO
+    _logo_width = 0
+    try:
+        from rich.text import Text
+        for _line in _logo.splitlines():
+            _logo_width = max(_logo_width, len(Text.from_markup(_line)))
+    except Exception:
+        _logo_width = 0
+    if _logo_width and term_width >= min(95, _logo_width + 8):
         console.print(_logo)
         console.print()
     console.print(outer_panel)
