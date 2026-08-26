@@ -133,6 +133,7 @@ BUILT-IN SKINS
 - ``slate``   — Cool blue developer-focused theme
 - ``daylight`` — Light background theme with dark text and blue accents
 - ``warm-lightmode`` — Warm brown/gold text for light terminal backgrounds
+- ``norual``  — Hacker theme: blood red and maroon on terminal black
 
 USER SKINS
 ==========
@@ -773,6 +774,75 @@ _BUILTIN_SKINS: Dict[str, Dict[str, Any]] = {
 [#F29C38]⠀⠀⠀⠀⠀⠀⠀⠀⣰⡿⢿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [#F29C38]⠀⠀⠀⠀⠀⠀⠀⣼⡟⠀⠀⢻⣧⠀⠀⠀⠀⠀⠀⠀⠀[/]
 [dim #7A3511]⠀⠀⠀⠀⠀⠀⠀tail flame lit⠀⠀⠀⠀⠀⠀⠀⠀[/]""",
+    },
+    "norual": {
+        "name": "norual",
+        "description": "Hacker theme — blood red and maroon",
+        "colors": {
+            "banner_border": "#A93333",
+            "banner_title": "#FF4B4B",
+            "banner_accent": "#E84848",
+            "banner_dim": "#9E5555",
+            "banner_text": "#FFD9D9",
+            "ui_accent": "#FF3B3B",
+            "ui_label": "#E57373",
+            "ui_ok": "#66BB6A",
+            "ui_error": "#FF5252",
+            "ui_warn": "#FF8A50",
+            "prompt": "#FFD9D9",
+            "input_rule": "#A93333",
+            "response_border": "#C62828",
+            "status_bar_bg": "#160505",
+            "status_bar_text": "#E0B4B4",
+            "status_bar_strong": "#FF4B4B",
+            "status_bar_dim": "#C05757",
+            "status_bar_good": "#7BC96F",
+            "status_bar_warn": "#FFB74D",
+            "status_bar_bad": "#FF5252",
+            "status_bar_critical": "#FF2D2D",
+            "session_label": "#E57373",
+            "session_border": "#C05757",
+            "completion_menu_bg": "#160505",
+            "completion_menu_current_bg": "#3A1010",
+            "selection_bg": "#4A1515",
+            "shell_dollar": "#FF4B4B",
+            "voice_status_bg": "#160505",
+        },
+        "spinner": {
+            "waiting_faces": ["(0x)", "(>>)", "(◉)", "(⌁)", "(::)"],
+            "thinking_faces": ["(0x)", "(>>)", "(◉)", "(⌁)", "(::)"],
+            "thinking_verbs": [
+                "cracking shells", "rooting the filesystem", "sniffing packets",
+                "parsing hexdumps", "escalating privileges", "injecting context",
+                "reversing tokens", "tracing syscalls",
+            ],
+            "wings": [
+                ["⟪0x", "x0⟫"],
+                ["⟪▮", "▮⟫"],
+                ["⟪◉", "◉⟫"],
+                ["⟪>>", "<<⟫"],
+            ],
+        },
+        "branding": {
+            "agent_name": "Norual Agent",
+            "welcome": "Welcome to Norual Agent! Type your message or /help for commands.",
+            "goodbye": "Logging out. >_",
+            "response_label": " NORUAL ",
+            "prompt_symbol": ">_",
+            "help_header": "[>_] Available Commands",
+        },
+        "tool_prefix": "»",
+        "banner_logo": """[bold #FF2D2D] ███╗   ██╗ ██████╗ ██████╗ ██╗   ██╗ █████╗ ██╗[/]
+[bold #E02424] ████╗  ██║ ██╔═══██╗ ██╔══██╗ ██║   ██║ ██╔══██╗ ██║[/]
+[#C81E1E] ██╔██╗ ██║ ██║   ██║ ██████╔╝ ██║   ██║ ███████║ ██║[/]
+[#B01818] ██║╚██╗██║ ██║   ██║ ██╔══██╗ ██║   ██║ ██╔══██║ ██║[/]
+[#8B0000] ██║ ╚████║ ╚██████╔╝ ██║  ██║ ╚██████╔╝ ██║  ██║ ███████╗[/]
+[#6E0000] ╚═╝  ╚═══╝  ╚═════╝ ╚═╝  ╚═╝  ╚═════╝ ╚═╝  ╚═╝ ╚══════╝[/]""",
+        "banner_hero": """[#FF4B4B]▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄[/]
+[#C62828]█ root@norual: ~ $ ./agent --mode full █[/]
+[#8B0000]█ [0x1F4D1A] context loaded · tools armed █[/]
+[#6E0000]▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀[/]
+[dim #7A3B3B]root@norual:~$[/]""",
     },
 }
 

@@ -51,12 +51,17 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default Hermes home path.
+
+    norual-agent fork: defaults to ~/.norual (Windows: %LOCALAPPDATA%\\norual)
+    instead of ~/.hermes. HERMES_HOME env var still overrides; see
+    NORUAL_NOTES.md.
+    """
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "norual"
+    return Path.home() / ".norual"
 
 
 def _hermes_home_from_env() -> Path:
