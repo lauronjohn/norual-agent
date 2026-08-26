@@ -85,6 +85,10 @@ exist via `hermes cron` / the `cronjob` tool — none created (user preference).
 | `hermes_cli/oneshot.py` | `run_oneshot` registers the launch directory as the `"default"` task workspace-cwd override (`register_task_env_overrides(..., cwd_source="session")`), mirroring interactive/TUI/ACP/gateway surfaces | Fixes upstream quirk: `norual -z` tools ran in `~` instead of the launch dir |
 | `hermes_cli/skin_engine.py` | norual `banner_hero`: `\[0x1F4D1A]` escaped so Rich renders it as literal text (was leaking as an invalid tag) | Keep the escape if editing the hero |
 | `hermes_cli/banner.py` | Logo now prints when it FITS (`min(95, logo_width + 8)` via `Text.from_markup`), so narrow terminals show the norual logo (was hardcoded 95 cols) | Fork behavior change; upstream uses the 95-col check |
+| `agent/prompt_builder.py` | Model-facing identity rebrand: `DEFAULT_AGENT_IDENTITY` + both `HERMES_AGENT_HELP_GUIDANCE*` blocks now say "Norual Agent, the user's personal AI assistant (built on the Hermes Agent platform by Nous Research)"; skill-loading guidance examples use `norual` commands | Re-apply on upstream merge |
+
+### User state (outside repo)
+- `~/.norual/SOUL.md` — persona file, auto-created on first run with the default identity; overrides `DEFAULT_AGENT_IDENTITY` (slot #1). Rebranded to Norual Agent. NOTE: an upstream re-seed could regenerate it — pin it or accept the identity override.
 
 Why `hermes` still exists (user Q): `norual-agent`/`nra` are aliases to the
 same entry point (`hermes_cli.main:main`). The `hermes` binary is kept because
