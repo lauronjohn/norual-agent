@@ -248,7 +248,7 @@ COMMAND_REGISTRY: list[CommandDef] = [
                args_hint="[model] [--provider name] [--global|--session] [--refresh]",
                busy_policy="reject", busy_handler="model"),
     CommandDef("provider", "Pick a provider and save its API key", "Configuration",
-               cli_only=True, aliases=("providers",),
+               cli_only=True,
                args_hint="[provider-id]"),
     CommandDef("codex-runtime", "Toggle codex app-server runtime for OpenAI/Codex models",
                "Configuration", aliases=("codex_runtime",),
