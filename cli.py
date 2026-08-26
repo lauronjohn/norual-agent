@@ -18317,20 +18317,24 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         @kb.add('tab', eager=True)
         def handle_tab(event):
-            """Tab: accept completion, auto-suggestion, or start completions.
+            """Tab: accept auto-suggestion, completion, or start completions.
+
+            norual-agent fork: ghost-text auto-suggestion is accepted FIRST.
+            Upstream prioritized the completion menu, but complete_while_typing
+            keeps that menu open almost constantly, so Tab silently accepted
+            random fuzzy matches instead of the visible ghost text. Suggestion
+            first matches the "Tab accepts the ghost text" tip users expect.
 
             Priority:
-            1. Completion menu open → accept selected completion
-            2. Ghost text suggestion available → accept auto-suggestion
+            1. Ghost text suggestion available → accept auto-suggestion
+            2. Completion menu open → accept selected completion
             3. Otherwise → start completion menu
-
-            After accepting a provider like 'anthropic:', the completion menu
-            closes and complete_while_typing doesn't fire (no keystroke).
-            This binding re-triggers completions so stage-2 models appear
-            immediately.
             """
             buf = event.current_buffer
-            if buf.complete_state:
+            if buf.suggestion and buf.suggestion.text:
+                # Ghost text auto-suggestion — accept it first.
+                buf.insert_text(buf.suggestion.text)
+            elif buf.complete_state:
                 # Completion menu is open — accept the selection
                 completion = buf.complete_state.current_completion
                 if completion is None:
@@ -18341,9 +18345,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     return
                 # Accept the selected completion
                 buf.apply_completion(completion)
-            elif buf.suggestion and buf.suggestion.text:
-                # No completion menu, but there's a ghost text auto-suggestion — accept it
-                buf.insert_text(buf.suggestion.text)
             else:
                 # No menu and no suggestion — start completions from scratch
                 buf.start_completion()
