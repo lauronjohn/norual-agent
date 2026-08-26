@@ -5575,6 +5575,11 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         self._secret_state = None
         self._secret_deadline = 0
         self._spinner_text: str = ""  # thinking spinner text for TUI
+        # norual fork: live spinner animation state (rotating skin faces/verbs
+        # while the agent works — the spinner used to be static text).
+        self._spinner_frame_idx: int = 0
+        self._spinner_anim_running: bool = False
+        self._spinner_anim_thread: Optional[threading.Thread] = None
         self._tool_start_time: float = 0.0  # monotonic timestamp when current tool started (for live elapsed)
         self._pending_tool_info: dict = {}  # function_name -> list of (preview, args) for stacked scrollback
         self._last_scrollback_tool: str = ""  # last tool name printed to scrollback (for "new" dedup)
@@ -6654,8 +6659,17 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     def _render_spinner_text(self) -> str:
         """Return the live spinner/status text exactly as rendered in the TUI."""
         txt = getattr(self, "_spinner_text", "")
+        # norual fork: when the agent is running with nothing specific to
+        # report yet (cold start before the first wait notice), show an
+        # animated thinking verb so the user sees live progress.
+        if not txt and getattr(self, "_agent_running", False):
+            txt = self._default_thinking_verb()
         if not txt:
             return ""
+        # norual fork: prepend the animated skin face so the spinner moves.
+        face = self._current_spinner_face()
+        if face:
+            txt = f"{face} {txt}"
         flow = self._spinner_token_flow()
         t0 = getattr(self, "_tool_start_time", 0) or 0
         if t0 > 0:
@@ -6973,6 +6987,84 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                         break
                 except Exception:
                     pass
+
+    _SPINNER_FRAME_INTERVAL = 0.15  # ~7fps spinner animation while busy
+
+    def _current_spinner_face(self) -> str:
+        """Return the animated skin face for the live spinner (norual fork).
+
+        Cycles the active skin's thinking/waiting faces by the anim frame
+        index so "thinking" visibly moves instead of sitting static.
+        """
+        idx = getattr(self, "_spinner_frame_idx", 0)
+        try:
+            from hermes_cli.skin_engine import get_active_skin
+
+            skin = get_active_skin()
+        except Exception:
+            skin = None
+        faces = []
+        try:
+            if skin is not None:
+                using_tool = (getattr(self, "_tool_start_time", 0) or 0) > 0
+                faces = skin.spinner.get("waiting_faces" if using_tool else "thinking_faces", [])
+        except Exception:
+            faces = []
+        if not faces:
+            faces = ["(◉)", "(◌)", "(◑)"]
+        return str(faces[idx % len(faces)])
+
+    def _default_thinking_verb(self) -> str:
+        """Rotating thinking verb from the active skin (norual fork)."""
+        idx = getattr(self, "_spinner_frame_idx", 0)
+        try:
+            from hermes_cli.skin_engine import get_active_skin
+
+            skin = get_active_skin()
+            verbs = skin.spinner.get("thinking_verbs", []) if skin is not None else []
+        except Exception:
+            verbs = []
+        if not verbs:
+            verbs = ["thinking", "processing"]
+        return str(verbs[idx % len(verbs)])
+
+    def _spinner_anim_loop(self) -> None:
+        """Advance the spinner face/verb + repaint while the agent is busy.
+
+        Mirrors the pet animation loop: a daemon ticker that only repaints
+        when there is something live to animate (agent/command running with
+        a spinner visible).
+        """
+        while self._spinner_anim_running:
+            time.sleep(self._SPINNER_FRAME_INTERVAL)
+            if getattr(self, "_terminal_io_broken", False):
+                self._spinner_anim_running = False
+                break
+            if not getattr(self, "_agent_running", False) and not getattr(self, "_command_running", False):
+                continue
+            if not getattr(self, "_spinner_text", "") and not getattr(self, "_agent_running", False):
+                continue
+            self._spinner_frame_idx += 1
+            app = getattr(self, "_app", None)
+            if app is not None:
+                try:
+                    app.invalidate()
+                except OSError as exc:
+                    if getattr(exc, "errno", None) == errno.EIO:
+                        self._mark_terminal_io_broken("spinner_anim")
+                        break
+                except Exception:
+                    pass
+
+    def _start_spinner_anim(self) -> None:
+        """Start the live spinner animation ticker (idempotent)."""
+        if self._spinner_anim_running:
+            return
+        self._spinner_anim_running = True
+        self._spinner_anim_thread = threading.Thread(
+            target=self._spinner_anim_loop, daemon=True, name="spinner-anim"
+        )
+        self._spinner_anim_thread.start()
 
     def _pet_start_anim(self) -> None:
         if self._pet_anim_running:
@@ -20461,6 +20553,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         )
         _disable_prompt_toolkit_cpr_warning(app)
         self._app = app  # Store reference for clarify_callback
+        # norual fork: live spinner animation (rotating skin faces/verbs).
+        self._start_spinner_anim()
 
         # ── Fix ghost status-bar lines on terminal resize ──────────────
         # Resize handling: monkey-patch prompt_toolkit's _output_screen_diff
