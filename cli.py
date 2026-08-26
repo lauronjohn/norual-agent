@@ -6660,16 +6660,16 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         """Return the live spinner/status text exactly as rendered in the TUI."""
         txt = getattr(self, "_spinner_text", "")
         # norual fork: when the agent is running with nothing specific to
-        # report yet (cold start before the first wait notice), show an
-        # animated thinking verb so the user sees live progress.
+        # report yet (cold start before the first wait notice), show a
+        # simple static "thinking" label.
         if not txt and getattr(self, "_agent_running", False):
-            txt = self._default_thinking_verb()
+            txt = "thinking"
         if not txt:
             return ""
-        # norual fork: prepend the animated skin face so the spinner moves.
-        face = self._current_spinner_face()
-        if face:
-            txt = f"{face} {txt}"
+        # norual fork: prepend the breathing pulse so the spinner moves.
+        pulse = self._spinner_pulse()
+        if pulse:
+            txt = f"{pulse} {txt}"
         flow = self._spinner_token_flow()
         t0 = getattr(self, "_tool_start_time", 0) or 0
         if t0 > 0:
@@ -6988,45 +6988,19 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 except Exception:
                     pass
 
-    _SPINNER_FRAME_INTERVAL = 0.15  # ~7fps spinner animation while busy
+    _SPINNER_FRAME_INTERVAL = 0.15  # ~7fps pulse while busy
 
-    def _current_spinner_face(self) -> str:
-        """Return the animated skin face for the live spinner (norual fork).
+    # Breathing pulse: grows up then back down (classic "thinking" bar).
+    _PULSE_FRAMES = ("▁", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂")
 
-        Cycles the active skin's thinking/waiting faces by the anim frame
-        index so "thinking" visibly moves instead of sitting static.
+    def _spinner_pulse(self) -> str:
+        """Return the current pulsing bar glyph for the live spinner.
+
+        norual fork: a simple breathing pulse (▁▂▃▄▅▆▇█▇▆▅▄▃▂) instead of
+        rotating faces/verbs — the text stays static, only the bar breathes.
         """
         idx = getattr(self, "_spinner_frame_idx", 0)
-        try:
-            from hermes_cli.skin_engine import get_active_skin
-
-            skin = get_active_skin()
-        except Exception:
-            skin = None
-        faces = []
-        try:
-            if skin is not None:
-                using_tool = (getattr(self, "_tool_start_time", 0) or 0) > 0
-                faces = skin.spinner.get("waiting_faces" if using_tool else "thinking_faces", [])
-        except Exception:
-            faces = []
-        if not faces:
-            faces = ["(◉)", "(◌)", "(◑)"]
-        return str(faces[idx % len(faces)])
-
-    def _default_thinking_verb(self) -> str:
-        """Rotating thinking verb from the active skin (norual fork)."""
-        idx = getattr(self, "_spinner_frame_idx", 0)
-        try:
-            from hermes_cli.skin_engine import get_active_skin
-
-            skin = get_active_skin()
-            verbs = skin.spinner.get("thinking_verbs", []) if skin is not None else []
-        except Exception:
-            verbs = []
-        if not verbs:
-            verbs = ["thinking", "processing"]
-        return str(verbs[idx % len(verbs)])
+        return self._PULSE_FRAMES[idx % len(self._PULSE_FRAMES)]
 
     def _spinner_anim_loop(self) -> None:
         """Advance the spinner face/verb + repaint while the agent is busy.
