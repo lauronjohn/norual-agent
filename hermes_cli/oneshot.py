@@ -250,6 +250,22 @@ def run_oneshot(
         return 2
     use_config_toolsets = _normalize_toolsets(toolsets) is None
 
+    # norual-agent fork: register the launch directory as the session's
+    # workspace-cwd override, mirroring the interactive CLI / TUI / ACP /
+    # gateway surfaces (they call register_task_env_overrides with a
+    # cwd_source tag). Without an override the terminal/file tools fall back
+    # to a home-anchored cwd in oneshot mode, so `norual -z` launched from a
+    # project directory would operate on ~ instead of the project. The
+    # top-level agent lands on the "default" task key.
+    try:
+        from tools.terminal_tool import register_task_env_overrides
+
+        register_task_env_overrides(
+            "default", {"cwd": os.getcwd(), "cwd_source": "session"}
+        )
+    except Exception:
+        pass
+
     # Auto-approve any shell / tool approvals.  Non-interactive by
     # definition — a prompt would hang forever.
     os.environ["HERMES_YOLO_MODE"] = "1"
