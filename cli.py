@@ -5559,9 +5559,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         self._slash_confirm_state = None
         self._slash_confirm_deadline = 0
         self._model_picker_state = None
-        # norual fork: the composer placeholder is context-aware (last sent
-        # message), not a rotating canned hint — nothing on a fresh session.
-        self._composer_placeholder = ""
+        # norual fork: no composer placeholder text — the empty input shows a
+        # non-insertable command suggestion hint (see _command_suggestion_hint).
         self._command_palette_state = None
         # Armed when a bare `/resume` prints the recent-sessions list so the
         # very next bare numeric input (e.g. `3`) resolves to that session.
@@ -17579,33 +17578,13 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         level = min(rms, 8000) * 7 // 8000
         return _LEVEL_BARS[level]
 
-    def _context_composer_placeholder(self, max_chars: int = 60) -> str:
-        """Return the context-aware composer placeholder (norual fork).
+    def _command_suggestion_hint(self) -> str:
+        """Return the empty-composer command suggestion line (norual fork).
 
-        The previous context of what was sent: the last user message in the
-        session, collapsed to one line and trimmed. Returns "" when there is
-        no conversation yet, so a fresh session shows an empty input instead
-        of a canned hint.
+        A dimmed, non-insertable hint listing key slash commands; Tab on an
+        empty input opens the command completion menu instead.
         """
-        history = getattr(self, "conversation_history", None) or []
-        for msg in reversed(history):
-            if not isinstance(msg, dict) or msg.get("role") != "user":
-                continue
-            content = msg.get("content")
-            if isinstance(content, list):
-                content = " ".join(
-                    str(part.get("text", ""))
-                    for part in content
-                    if isinstance(part, dict) and part.get("type") == "text" and part.get("text")
-                )
-            text = str(content or "").strip()
-            if not text:
-                continue
-            text = " ".join(text.split())
-            if len(text) > max_chars:
-                text = text[: max_chars].rstrip() + "…"
-            return text
-        return ""
+        return "/help · /model · /models · /provider · /skin"
 
     def _get_tui_prompt_fragments(self):
         """Return the prompt_toolkit fragments for the current interactive state."""
@@ -18553,27 +18532,20 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         @kb.add('tab', eager=True)
         def handle_tab(event):
-            """Tab: pull in composer placeholder, auto-suggestion, completion,
-            or start completions.
+            """Tab: accept auto-suggestion, completion, or start completions.
 
-            norual-agent fork: empty input + Tab inserts the context-aware
-            placeholder (the previous message sent; nothing on a fresh
-            session). Ghost-text auto-suggestion is accepted before the
-            completion menu (upstream prioritized the menu, which
-            complete_while_typing keeps open).
+            norual-agent fork: the empty-input placeholder is a command
+            suggestion hint (non-insertable), so Tab on an empty input falls
+            through to the command completion menu. Ghost-text auto-suggestion
+            is accepted before the completion menu (upstream prioritized the
+            menu, which complete_while_typing keeps open).
 
             Priority:
-            0. Buffer empty → insert the context placeholder
             1. Ghost text suggestion available → accept auto-suggestion
             2. Completion menu open → accept selected completion
             3. Otherwise → start completion menu
             """
             buf = event.current_buffer
-            if not buf.text:
-                placeholder = cli_ref._context_composer_placeholder() or ""
-                if placeholder:
-                    buf.insert_text(placeholder)
-                    return
             if buf.suggestion and buf.suggestion.text:
                 # Ghost text auto-suggestion — accept it first.
                 buf.insert_text(buf.suggestion.text)
@@ -19577,10 +19549,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 _stash_hint = ""
             if _stash_hint:
                 return _stash_hint
-            # Idle + empty composer: show the previous context — the last
-            # message the user sent, trimmed to one line (norual fork).
-            # A fresh session has no context, so nothing is shown.
-            return cli_ref._context_composer_placeholder() or ""
+            # Idle + empty composer: suggest commands (norual fork). This is
+            # a non-insertable hint — Tab on empty input opens the command
+            # completion menu instead of pasting text.
+            return cli_ref._command_suggestion_hint()
 
         input_area.control.input_processors.append(_PlaceholderProcessor(_get_placeholder))
 
