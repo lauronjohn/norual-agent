@@ -90,6 +90,7 @@ exist via `hermes cron` / the `cronjob` tool — none created (user preference).
 | `cli.py` | Tab on an EMPTY input inserts the rotating composer placeholder (the dimmed hint like "Find and fix a failing test") — display-only upstream, so Tab had nothing to accept | Fork behavior change; upstream = start completion |
 | `cli.py` + `hermes_cli/tips.py` | `NON_INSERTABLE_COMPOSER_PLACEHOLDERS` — navigational hints ("Type / to browse commands…") still render but Tab won't paste them (falls through to the command completion menu instead) | Keep the set in sync with `COMPOSER_PLACEHOLDERS` |
 | `hermes_cli/provider_cmd.py` (new) + `hermes_cli/main.py` | `norual provider [id|--list]` — pick a provider (curses menu), masked key prompt, saves via `save_env_value` to `.env`, optional default-provider set via `set_config_value`. Dedupes registry aliases by canonical `cfg.id` | New subcommand; re-wire into main.py on upstream merge |
+| `hermes_cli/commands.py` + `cli.py` | `/provider [id]` slash command (aliases: `/providers`) dispatching to the same `provider_command` flow; cli_only | Re-apply on upstream merge |
 
 ### User state (outside repo)
 - `~/.norual/SOUL.md` — persona file, auto-created on first run with the default identity; overrides `DEFAULT_AGENT_IDENTITY` (slot #1). Rebranded to Norual Agent. NOTE: an upstream re-seed could regenerate it — pin it or accept the identity override.

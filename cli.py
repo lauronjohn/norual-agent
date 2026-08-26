@@ -11717,6 +11717,33 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if not one_turn:
             HermesCLI._persist_model_switch_to_session(self, result)
 
+    def _handle_provider_command(self, cmd_original: str) -> None:
+        """Handle /provider — pick a provider and save its API key.
+
+        Usage:
+          /provider            — interactive picker → masked key prompt
+          /provider deepseek   — configure that provider directly
+        """
+        import argparse
+        import shlex
+
+        from hermes_cli.provider_cmd import provider_command
+
+        tokens = shlex.split(cmd_original or "")
+        provider_id = None
+        if len(tokens) > 1 and not tokens[1].startswith("-"):
+            provider_id = tokens[1]
+
+        try:
+            rc = provider_command(
+                argparse.Namespace(provider_id=provider_id, provider_list=False)
+            )
+        except Exception as e:
+            self._console_print(f"[red]provider: {e}[/red]")
+            return
+        if rc:
+            self._console_print(f"[dim]provider exited with code {rc}[/dim]")
+
     def _handle_codex_runtime(self, cmd_original: str) -> None:
         """Handle /codex-runtime — toggle the codex app-server runtime opt-in.
 
@@ -12196,6 +12223,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             self._handle_sessions_command(cmd_original)
         elif canonical == "model":
             self._handle_model_switch(cmd_original)
+        elif canonical == "provider":
+            self._handle_provider_command(cmd_original)
         elif canonical == "codex-runtime":
             self._handle_codex_runtime(cmd_original)
 
