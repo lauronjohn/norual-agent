@@ -6990,17 +6990,37 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
     _SPINNER_FRAME_INTERVAL = 0.15  # ~7fps pulse while busy
 
-    # Breathing pulse: grows up then back down (classic "thinking" bar).
-    _PULSE_FRAMES = ("▁", "▂", "▃", "▄", "▅", "▆", "▇", "█", "▇", "▆", "▅", "▄", "▃", "▂")
+    # Pulsing thunderbolt: brightness ramp for the bolt glyph (skin accent).
+    _BOLT_PULSE_FACTORS = (0.4, 0.6, 0.8, 1.0, 0.8, 0.6)
+    _BOLT_GLYPH = "\u26a1\ufe0e"  # ⚡ + text-presentation selector (colored, not emoji)
 
     def _spinner_pulse(self) -> str:
-        """Return the current pulsing bar glyph for the live spinner.
+        """Return the pulsing thunderbolt glyph (norual fork).
 
-        norual fork: a simple breathing pulse (▁▂▃▄▅▆▇█▇▆▅▄▃▂) instead of
-        rotating faces/verbs — the text stays static, only the bar breathes.
+        The bolt breathes in brightness — dark → accent-bright → dark —
+        using the active skin's ``ui_accent`` color, so "thinking" pulses
+        without rotating any text.
         """
         idx = getattr(self, "_spinner_frame_idx", 0)
-        return self._PULSE_FRAMES[idx % len(self._PULSE_FRAMES)]
+        accent = ""
+        try:
+            from hermes_cli.skin_engine import get_active_skin
+
+            skin = get_active_skin()
+            accent = (skin.get_color("ui_accent", "") or "").lstrip("#")
+        except Exception:
+            accent = ""
+        r, g, b = 0xFF, 0x4B, 0x4B
+        if len(accent) == 6:
+            try:
+                r, g, b = int(accent[0:2], 16), int(accent[2:4], 16), int(accent[4:6], 16)
+            except ValueError:
+                pass
+        f = self._BOLT_PULSE_FACTORS[idx % len(self._BOLT_PULSE_FACTORS)]
+        return (
+            f"\033[38;2;{int(r * f)};{int(g * f)};{int(b * f)}m"
+            f"{self._BOLT_GLYPH}\033[0m"
+        )
 
     def _spinner_anim_loop(self) -> None:
         """Advance the spinner face/verb + repaint while the agent is busy.
