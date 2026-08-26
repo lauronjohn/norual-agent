@@ -24,11 +24,17 @@ from hermes_cli.auth import PROVIDER_REGISTRY, ProviderConfig
 def _api_key_providers() -> Dict[str, ProviderConfig]:
     """Providers that authenticate with a plain API key (no OAuth flow).
 
-    Deduped by the entry's canonical ``id``: the provider-plugin scan can
-    register several legacy alias keys (e.g. ``meta``/``muse``/``msl``) that
-    all resolve to the same canonical provider id.
+    Merges two sources:
+    1. ``PROVIDER_REGISTRY`` (auth.py) — deduped by the entry's canonical
+       ``id`` (the provider-plugin scan can register several legacy alias
+       keys, e.g. ``meta``/``muse``/``msl``, all resolving to one provider).
+    2. ``providers`` plugin profiles — OpenRouter and friends are
+       deliberately NOT in the registry (``openrouter not in
+       PROVIDER_REGISTRY`` is load-bearing for runtime_provider), but they
+       still take a plain API key, so they belong in the picker.
     """
     out: Dict[str, ProviderConfig] = {}
+
     for pid, cfg in PROVIDER_REGISTRY.items():
         if getattr(cfg, "auth_type", "") != "api_key":
             continue
@@ -36,7 +42,46 @@ def _api_key_providers() -> Dict[str, ProviderConfig]:
             continue
         canonical = getattr(cfg, "id", None) or pid
         out[canonical] = cfg
+
+    try:
+        from providers import list_providers as _list_providers
+
+        for pp in _list_providers():
+            if getattr(pp, "auth_type", "") != "api_key":
+                continue
+            env_vars = tuple(
+                v for v in getattr(pp, "env_vars", ()) or ()
+                if not v.endswith(("_BASE_URL", "_URL"))
+            )
+            if not env_vars:
+                continue
+            canonical = str(getattr(pp, "name", "") or "")
+            if not canonical or canonical in out:
+                continue
+            out[canonical] = ProviderConfig(
+                id=canonical,
+                name=str(getattr(pp, "display_name", None) or canonical),
+                auth_type="api_key",
+                inference_base_url=str(getattr(pp, "base_url", "") or ""),
+                api_key_env_vars=env_vars,
+                base_url_env_var=next(
+                    (v for v in (getattr(pp, "env_vars", ()) or ())
+                     if v.endswith(("_BASE_URL", "_URL"))),
+                    "",
+                ),
+            )
+    except Exception:
+        pass
+
     return out
+
+
+def _resolve_provider_config(pid: str) -> Optional[ProviderConfig]:
+    """Resolve a provider id against the registry, then plugin profiles."""
+    cfg = PROVIDER_REGISTRY.get(pid)
+    if cfg is not None:
+        return cfg
+    return _api_key_providers().get(pid)
 
 
 def _env_value(var: str) -> str:
@@ -104,7 +149,7 @@ def _save_key(cfg: ProviderConfig, value: str) -> bool:
 
 
 def _interactive_flow(pid: str, *, key_callback=None, ask_default: bool = True) -> int:
-    cfg = PROVIDER_REGISTRY.get(pid)
+    cfg = _resolve_provider_config(pid)
     if cfg is None:
         print(f"✗ unknown provider '{pid}'. Run `norual provider --list` to see the available ones.",
               file=sys.stderr)
