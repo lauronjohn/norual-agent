@@ -6685,11 +6685,13 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 # Keep width stable before the 60s rollover as well.
                 elapsed_str = f"{elapsed:5.1f}s"
             if flow:
-                return f"  {txt}  ({elapsed_str} · {flow})"
-            return f"  {txt}  ({elapsed_str})"
+                # norual fork: no leading spaces — the pulsing bolt fragment
+                # supplies the single separator space.
+                return f"{txt}  ({elapsed_str} · {flow})"
+            return f"{txt}  ({elapsed_str})"
         if flow:
-            return f"  {txt}  ({flow})"
-        return f"  {txt}"
+            return f"{txt}  ({flow})"
+        return f"{txt}"
 
     # ── Per-turn accounting (display.turn_summary / spinner_token_flow) ──
     #
