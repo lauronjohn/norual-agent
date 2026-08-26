@@ -18317,20 +18317,27 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         @kb.add('tab', eager=True)
         def handle_tab(event):
-            """Tab: accept auto-suggestion, completion, or start completions.
+            """Tab: pull in composer placeholder, auto-suggestion, completion,
+            or start completions.
 
-            norual-agent fork: ghost-text auto-suggestion is accepted FIRST.
-            Upstream prioritized the completion menu, but complete_while_typing
-            keeps that menu open almost constantly, so Tab silently accepted
-            random fuzzy matches instead of the visible ghost text. Suggestion
-            first matches the "Tab accepts the ghost text" tip users expect.
+            norual-agent fork: empty input + Tab inserts the rotating composer
+            placeholder (the dimmed hint like "Find and fix a failing test" —
+            display-only upstream, so Tab had nothing to accept). Ghost-text
+            auto-suggestion is accepted before the completion menu (upstream
+            prioritized the menu, which complete_while_typing keeps open).
 
             Priority:
+            0. Buffer empty → insert the composer placeholder
             1. Ghost text suggestion available → accept auto-suggestion
             2. Completion menu open → accept selected completion
             3. Otherwise → start completion menu
             """
             buf = event.current_buffer
+            if not buf.text:
+                placeholder = getattr(cli_ref, "_composer_placeholder", "") or ""
+                if placeholder:
+                    buf.insert_text(placeholder)
+                    return
             if buf.suggestion and buf.suggestion.text:
                 # Ghost text auto-suggestion — accept it first.
                 buf.insert_text(buf.suggestion.text)

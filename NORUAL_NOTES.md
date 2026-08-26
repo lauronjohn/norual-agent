@@ -87,6 +87,7 @@ exist via `hermes cron` / the `cronjob` tool — none created (user preference).
 | `hermes_cli/banner.py` | Logo now prints when it FITS (`min(95, logo_width + 8)` via `Text.from_markup`), so narrow terminals show the norual logo (was hardcoded 95 cols) | Fork behavior change; upstream uses the 95-col check |
 | `agent/prompt_builder.py` | Model-facing identity rebrand: `DEFAULT_AGENT_IDENTITY` + both `HERMES_AGENT_HELP_GUIDANCE*` blocks now say "Norual Agent, the user's personal AI assistant (built on the Hermes Agent platform by Nous Research)"; skill-loading guidance examples use `norual` commands | Re-apply on upstream merge |
 | `cli.py` | Tab keybinding priority flipped: ghost-text auto-suggestion is accepted BEFORE the completion menu (upstream accepted completions first, so `complete_while_typing`'s always-open menu swallowed Tab) | Fork behavior change; upstream = completion-first |
+| `cli.py` | Tab on an EMPTY input inserts the rotating composer placeholder (the dimmed hint like "Find and fix a failing test") — display-only upstream, so Tab had nothing to accept | Fork behavior change; upstream = start completion |
 
 ### User state (outside repo)
 - `~/.norual/SOUL.md` — persona file, auto-created on first run with the default identity; overrides `DEFAULT_AGENT_IDENTITY` (slot #1). Rebranded to Norual Agent. NOTE: an upstream re-seed could regenerate it — pin it or accept the identity override.
