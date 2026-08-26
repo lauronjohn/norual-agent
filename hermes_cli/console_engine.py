@@ -161,8 +161,13 @@ def _format_job(job: dict, action: str) -> str:
     return f"{action} job: {name} ({job_id}) [{state}]"
 
 
+# norual-agent fork: prog reflects the invoked binary name (norual-agent,
+# nra, hermes, hermes-agent) so help/usage output matches what the user
+# actually typed. Falls back to "hermes" for python -m invocation.
 def _parser_root() -> tuple[_ArgumentParser, argparse._SubParsersAction]:
-    parser = _ArgumentParser(prog="hermes", add_help=False)
+    from hermes_cli._parser import console_prog
+
+    parser = _ArgumentParser(prog=console_prog(), add_help=False)
     subparsers = parser.add_subparsers(dest="_console_command")
     return parser, subparsers
 

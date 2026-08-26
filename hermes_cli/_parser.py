@@ -11,6 +11,8 @@ because its dispatch is tightly coupled to module-level ``cmd_*`` functions.
 """
 
 import argparse
+import os
+import sys
 from functools import lru_cache
 
 
@@ -22,6 +24,19 @@ PRE_ARGPARSE_INHERITED_FLAGS: list[tuple[str, bool]] = [
     ("--profile", True),
     ("-p", True),
 ]
+
+# norual-agent fork: the CLI ships under several names (hermes, hermes-agent,
+# norual-agent, nra — all the same entry point). Usage/help output should
+# match what the user actually invoked.
+_CONSOLE_PROG_NAMES: frozenset[str] = frozenset(
+    {"hermes", "hermes-agent", "norual-agent", "nra"}
+)
+
+
+def console_prog() -> str:
+    """Return the invoked binary name for argparse ``prog`` (fallback: hermes)."""
+    name = os.path.basename(sys.argv[0] or "")
+    return name if name in _CONSOLE_PROG_NAMES else "hermes"
 
 
 # Static snapshot fallback for ``top_level_value_flag_sets`` — used only if
@@ -141,8 +156,8 @@ def build_top_level_parser():
     other subparsers via ``subparsers.add_parser(...)``.
     """
     parser = argparse.ArgumentParser(
-        prog="hermes",
-        description="Hermes Agent - AI assistant with tool-calling capabilities",
+        prog=console_prog(),
+        description="Norual Agent - AI assistant with tool-calling capabilities",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=_EPILOGUE,
     )

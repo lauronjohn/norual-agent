@@ -75,9 +75,23 @@ enabled with sane defaults; bundled skills are available by default
 optional-skills); FTS5 session search is built into `state.db`; cron automations
 exist via `hermes cron` / the `cronjob` tool — none created (user preference).
 
+### Phase 3.5 — invoked-name-aware CLI help (complete)
+
+| File | Change | Re-apply notes |
+|---|---|---|
+| `hermes_cli/_parser.py` | `console_prog()` helper + dynamic `prog=`; description rebranded "Norual Agent - AI assistant..." | Upstream may revert on merge |
+| `hermes_cli/console_engine.py` | `_parser_root()` uses `console_prog()` | Same |
+
+Why `hermes` still exists (user Q): `norual-agent`/`nra` are aliases to the
+same entry point (`hermes_cli.main:main`). The `hermes` binary is kept because
+internal machinery invokes it by name — SKILL.md files (`hermes cron`,
+`hermes skills install`, ...), process scans
+(`_HERMES_CONSOLE_SCRIPT_NAMES`), gateway spawns, cron jobs, docs — and
+removing it would break skills and upstream merge hygiene.
+
 ### User state (outside repo)
-- `~/.norual/config.yaml` — Phase 3 additions: `memory`, `curator`, `auxiliary`
-  cheap-model routing (see above)
+- `~/.norual/skills/` — builtin skills synced via `sync_skills()` (77 enabled),
+  incl. `research/arxiv` + `productivity/weekly-review-planning`
 
 ## Rebrand inventory (Phase 1 targets)
 
