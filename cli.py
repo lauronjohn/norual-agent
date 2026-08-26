@@ -11720,14 +11720,30 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     def _handle_provider_command(self, cmd_original: str) -> None:
         """Handle /provider — pick a provider and save its API key.
 
-        Usage:
-          /provider            — interactive picker → masked key prompt
+        Uses the CLI's secure in-app secret modal (no getpass — it races the
+        prompt_toolkit input reader and can hang). Usage:
+          /provider            — interactive picker → secure key prompt
           /provider deepseek   — configure that provider directly
         """
         import argparse
         import shlex
 
+        from hermes_cli.callbacks import prompt_for_secret
         from hermes_cli.provider_cmd import provider_command
+
+        def _inapp_key(cfg) -> bool:
+            var = cfg.api_key_env_vars[0]
+            if os.environ.get(var):
+                self._console_print(
+                    f"[dim]{cfg.name} is already configured ({var} set) — keeping it.[/dim]"
+                )
+                return True
+            result = prompt_for_secret(
+                self,
+                var,
+                f"Enter your {cfg.name} API key",
+            )
+            return bool(result and result.get("success") and not result.get("skipped"))
 
         tokens = shlex.split(cmd_original or "")
         provider_id = None
@@ -11736,11 +11752,17 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         try:
             rc = provider_command(
-                argparse.Namespace(provider_id=provider_id, provider_list=False)
+                argparse.Namespace(provider_id=provider_id, provider_list=False),
+                key_callback=_inapp_key,
+                ask_default=False,
             )
         except Exception as e:
             self._console_print(f"[red]provider: {e}[/red]")
             return
+        self._console_print(
+            "[dim]Switch now: /model --provider <name> (or persist with "
+            "/model --provider <name> --global)[/dim]"
+        )
         if rc:
             self._console_print(f"[dim]provider exited with code {rc}[/dim]")
 

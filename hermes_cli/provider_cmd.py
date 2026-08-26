@@ -39,9 +39,30 @@ def _api_key_providers() -> Dict[str, ProviderConfig]:
     return out
 
 
+def _env_value(var: str) -> str:
+    """Read a var from the profile's .env.
+
+    Subcommands don't load .env into os.environ, so os.getenv alone would
+    report "no key" for an already-configured provider. get_env_path() is
+    profile-aware (respects HERMES_HOME / the fork's ~/.norual default).
+    """
+    try:
+        from hermes_cli.config import get_env_path
+
+        path = get_env_path()
+        if path and path.exists():
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                line = line.strip()
+                if line.startswith(f"{var}="):
+                    return line[len(var) + 1 :].strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return ""
+
+
 def _status_line(cfg: ProviderConfig) -> str:
     var = cfg.api_key_env_vars[0]
-    configured = bool(os.getenv(var))
+    configured = bool(os.getenv(var) or _env_value(var))
     marker = "configured" if configured else "no key"
     base = getattr(cfg, "inference_base_url", "") or ""
     return f"{cfg.name} [{cfg.id}] — {var} ({marker})" + (f" — {base}" if base else "")
@@ -49,8 +70,8 @@ def _status_line(cfg: ProviderConfig) -> str:
 
 def _prompt_api_key(cfg: ProviderConfig) -> Optional[str]:
     var = cfg.api_key_env_vars[0]
-    if os.getenv(var):
-        existing = os.getenv(var) or ""
+    existing = os.getenv(var) or _env_value(var)
+    if existing:
         shown = existing[:10] + "…" if len(existing) > 12 else "(set)"
         print(f"  {cfg.name} already has a key ({shown}) — press Enter to keep it, or type a new one.")
     try:
@@ -82,7 +103,7 @@ def _save_key(cfg: ProviderConfig, value: str) -> bool:
         return False
 
 
-def _interactive_flow(pid: str) -> int:
+def _interactive_flow(pid: str, *, key_callback=None, ask_default: bool = True) -> int:
     cfg = PROVIDER_REGISTRY.get(pid)
     if cfg is None:
         print(f"✗ unknown provider '{pid}'. Run `norual provider --list` to see the available ones.",
@@ -90,31 +111,37 @@ def _interactive_flow(pid: str) -> int:
         return 1
 
     print(_status_line(cfg))
-    key = _prompt_api_key(cfg)
-    if key is None:
-        print("(cancelled — existing key kept, nothing changed)")
-        return 0
-    if not key:
-        print("(no new key entered — keeping the existing one)")
-        if os.getenv(cfg.api_key_env_vars[0]):
-            pass
+
+    if key_callback is not None:
+        # In-app flow (e.g. /provider inside the interactive CLI): the
+        # callback owns prompting + storing (secure modal, no getpass race).
+        if not key_callback(cfg):
+            return 0
+    else:
+        var = cfg.api_key_env_vars[0]
+        if os.getenv(var) or _env_value(var):
+            print(f"  {cfg.name} is already configured — keeping the existing key.")
         else:
-            print("✗ no key configured for this provider.", file=sys.stderr)
-            return 1
+            key = _prompt_api_key(cfg)
+            if key is None:
+                print("(cancelled — nothing changed)")
+                return 0
+            if not key:
+                print("✗ no key entered and none configured.", file=sys.stderr)
+                return 1
+            if not _save_key(cfg, key):
+                return 1
+            from hermes_constants import display_hermes_home
 
-    if key:
-        if not _save_key(cfg, key):
-            return 1
-        from hermes_constants import display_hermes_home
+            print(f"✓ {var} saved to {display_hermes_home()}/.env")
 
-        print(f"✓ {cfg.api_key_env_vars[0]} saved to {display_hermes_home()}/.env")
-
-    try:
-        choice = input("  Set as default provider? [y/N] ").strip().lower()
-    except (EOFError, KeyboardInterrupt):
-        choice = "n"
-    if choice in ("y", "yes"):
-        _set_default_provider(pid)
+    if ask_default:
+        try:
+            choice = input("  Set as default provider? [y/N] ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            choice = "n"
+        if choice in ("y", "yes"):
+            _set_default_provider(pid)
 
     print(f"\nNext: `norual model` to pick a model, or `norual -m <model> --provider {pid} -z \"hi\"`.")
     return 0
@@ -131,13 +158,21 @@ def _list_flow() -> int:
     return 0
 
 
-def provider_command(args) -> int:
-    """Dispatch for the `provider` subcommand."""
+def provider_command(args, *, key_callback=None, ask_default: bool = True) -> int:
+    """Dispatch for the `provider` subcommand.
+
+    ``key_callback`` and ``ask_default`` let in-app callers (the /provider
+    slash command) substitute the getpass/input prompts with the CLI's own
+    secure modal prompts, which are safe inside the running prompt_toolkit
+    app (getpass races the app's input reader there).
+    """
     if getattr(args, "provider_list", False):
         return _list_flow()
 
     if getattr(args, "provider_id", None):
-        return _interactive_flow(args.provider_id)
+        return _interactive_flow(
+            args.provider_id, key_callback=key_callback, ask_default=ask_default
+        )
 
     # No positional → interactive picker (curses menu, fallback to numbered).
     providers = _api_key_providers()
@@ -168,7 +203,9 @@ def provider_command(args) -> int:
     if idx is None or not (0 <= idx < len(ids)):
         print("(cancelled)")
         return 0
-    return _interactive_flow(ids[idx])
+    return _interactive_flow(
+        ids[idx], key_callback=key_callback, ask_default=ask_default
+    )
 
 
 def build_parser(subparsers):
