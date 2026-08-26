@@ -10970,6 +10970,36 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         except Exception:
             logger.debug("command palette prefill failed", exc_info=True)
 
+    def _build_model_picker_providers(self, force_refresh: bool = False):
+        """Build the configured-providers payload for the model picker.
+
+        norual fork: ``explicit_only=True`` — only providers the user actually
+        configured (key present / in config), not ambient or auto-seeded rows.
+        Returns ``(ctx, providers)``; ctx may be None on inventory failure.
+        """
+        from hermes_cli.inventory import build_models_payload, load_picker_context
+
+        try:
+            ctx = load_picker_context().with_overrides(
+                current_provider=self.provider or "",
+                current_model=self.model or "",
+                current_base_url=self.base_url or "",
+            )
+        except Exception:
+            ctx = None
+        if ctx is None:
+            return None, []
+        try:
+            providers = build_models_payload(
+                ctx,
+                explicit_only=True,
+                probe_custom_providers=force_refresh,
+                probe_current_custom_provider=not force_refresh,
+            )["providers"]
+        except Exception:
+            providers = []
+        return ctx, providers
+
     def _open_model_picker(self, providers: list, current_model: str, current_provider: str, user_provs=None, custom_provs=None, *, start_at_model: bool = False) -> None:
         """Open prompt_toolkit-native /model picker modal.
 
@@ -11523,20 +11553,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             model_display = self.model or "unknown"
             provider_display = get_label(self.provider) if self.provider else "unknown"
 
-            try:
-                if ctx is None:
-                    raise RuntimeError("inventory context unavailable")
-                providers = build_models_payload(
-                    ctx,
-                    # norual fork: show only providers the user actually
-                    # configured (key present / in config), not ambient or
-                    # auto-seeded rows.
-                    explicit_only=True,
-                    probe_custom_providers=force_refresh,
-                    probe_current_custom_provider=not force_refresh,
-                )["providers"]
-            except Exception:
-                providers = []
+            _ctx, providers = self._build_model_picker_providers(force_refresh)
+            user_provs = _ctx.user_providers if _ctx is not None else None
+            custom_provs = _ctx.custom_providers if _ctx is not None else None
 
             if not providers:
                 _cprint("  No authenticated providers found.")
@@ -11805,6 +11824,42 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         )
         if rc:
             self._console_print(f"[dim]provider exited with code {rc}[/dim]")
+
+    def _handle_models_picker(self, cmd_original: str) -> None:
+        """Handle /models — pick a provider first, then its models.
+
+        The picker opens on the provider stage (all configured providers);
+        selecting one drills into that provider's model list. /model is the
+        inverse: straight to the current provider's models.
+        """
+        from hermes_cli.providers import get_label
+
+        force_refresh = "--refresh" in (cmd_original or "")
+        if force_refresh:
+            try:
+                from hermes_cli.models import clear_provider_models_cache
+
+                clear_provider_models_cache()
+                _cprint("  Cleared model picker cache. Refreshing...")
+            except Exception:
+                pass
+
+        _ctx, providers = self._build_model_picker_providers(force_refresh)
+        if not providers:
+            _cprint("  No authenticated providers found.")
+            _cprint("  Configure one with /provider, then try /models again.")
+            return
+
+        user_provs = _ctx.user_providers if _ctx is not None else None
+        custom_provs = _ctx.custom_providers if _ctx is not None else None
+        self._open_model_picker(
+            providers,
+            self.model or "unknown",
+            get_label(self.provider) if self.provider else "unknown",
+            user_provs=user_provs,
+            custom_provs=custom_provs,
+            start_at_model=False,
+        )
 
     def _handle_codex_runtime(self, cmd_original: str) -> None:
         """Handle /codex-runtime — toggle the codex app-server runtime opt-in.
@@ -12285,6 +12340,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             self._handle_sessions_command(cmd_original)
         elif canonical == "model":
             self._handle_model_switch(cmd_original)
+        elif canonical == "models":
+            self._handle_models_picker(cmd_original)
         elif canonical == "provider":
             self._handle_provider_command(cmd_original)
         elif canonical == "codex-runtime":

@@ -247,6 +247,8 @@ COMMAND_REGISTRY: list[CommandDef] = [
     CommandDef("model", "Switch model (session-scoped; --global to persist)", "Configuration",
                args_hint="[model] [--provider name] [--global|--session] [--refresh]",
                busy_policy="reject", busy_handler="model"),
+    CommandDef("models", "Pick a provider, then one of its models", "Configuration",
+               cli_only=True, args_hint="[--refresh]"),
     CommandDef("provider", "Pick a provider and save its API key", "Configuration",
                cli_only=True,
                args_hint="[provider-id]"),
