@@ -8106,7 +8106,8 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if self._stream_buf:
             line = _strip_markdown_syntax(self._stream_buf) if self.final_response_markdown == "strip" else self._stream_buf
             # norual fork: wrap the trailing partial line to the box width too.
-            for _wrapped in _wrap_stream_line(line, w - 2):
+            _fw = self._scrollback_box_width()
+            for _wrapped in _wrap_stream_line(line, _fw - 2):
                 _cprint(f"{_STREAM_PAD}{_tc}{_wrapped}{_RST}" if _tc else f"{_STREAM_PAD}{_wrapped}")
             self._stream_buf = ""
 
