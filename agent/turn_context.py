@@ -212,6 +212,15 @@ def _maybe_title_session_at_turn_start(agent: Any, messages: List[Any]) -> None:
         for msg in reversed(messages or []):
             if isinstance(msg, dict) and msg.get("role") == "user":
                 user_text = flatten_message_text(msg.get("content")).strip()
+                # norual fork: the CLI prepends a one-shot "[Note: model was
+                # just switched from X to Y ...]" to the first user message
+                # after a /model switch. That synthetic prefix must not become
+                # the session title (it shows up as a truncated yellow badge in
+                # the status bar). Strip it and title from the user's words.
+                if user_text.startswith("[Note: "):
+                    _note_end = user_text.find("]")
+                    if _note_end != -1:
+                        user_text = user_text[_note_end + 1:].strip()
                 break
         if not user_text:
             return
