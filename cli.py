@@ -10970,11 +10970,15 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         except Exception:
             logger.debug("command palette prefill failed", exc_info=True)
 
-    def _open_model_picker(self, providers: list, current_model: str, current_provider: str, user_provs=None, custom_provs=None) -> None:
-        """Open prompt_toolkit-native /model picker modal."""
+    def _open_model_picker(self, providers: list, current_model: str, current_provider: str, user_provs=None, custom_provs=None, *, start_at_model: bool = False) -> None:
+        """Open prompt_toolkit-native /model picker modal.
+
+        norual fork: ``start_at_model=True`` skips the provider stage and
+        opens directly on the (single) provider's model list.
+        """
         self._capture_modal_input_snapshot()
         default_idx = next((i for i, p in enumerate(providers) if p.get("is_current")), 0)
-        self._model_picker_state = {
+        state = {
             "stage": "provider",
             "providers": providers,
             "selected": default_idx,
@@ -10984,6 +10988,24 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             "custom_provs": custom_provs,
             "filter": "",
         }
+        if start_at_model and providers:
+            provider_data = providers[0]
+            model_list = provider_data.get("models", [])
+            if not model_list:
+                try:
+                    from hermes_cli.models import provider_model_ids
+
+                    live = provider_model_ids(provider_data.get("slug", ""))
+                    if live:
+                        model_list = live
+                except Exception:
+                    pass
+            state["stage"] = "model"
+            state["provider_data"] = provider_data
+            state["model_list"] = model_list
+            state["selected"] = 0
+            state["_filtered_pairs"] = None
+        self._model_picker_state = state
         self._invalidate(min_interval=0.0)
 
     def _confirm_expensive_model_switch(self, result) -> bool:
@@ -11510,6 +11532,28 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 _cprint("  /model <name> --session              switch for this session only")
                 _cprint("  /model --provider <slug>             switch provider")
                 _cprint("  /model --refresh                     re-fetch live model lists")
+                return
+
+            # norual fork: /model with no args shows ONLY the current
+            # provider's models, skipping the provider stage of the picker.
+            _cur_slug = (
+                self.provider
+                or (ctx.current_provider if ctx is not None else "")
+                or ""
+            )
+            _current_provider_rows = [
+                p for p in providers
+                if p.get("is_current") or (p.get("slug") or "") == _cur_slug
+            ]
+            if _current_provider_rows:
+                self._open_model_picker(
+                    _current_provider_rows,
+                    model_display,
+                    provider_display,
+                    user_provs=user_provs,
+                    custom_provs=custom_provs,
+                    start_at_model=True,
+                )
                 return
 
             self._open_model_picker(
