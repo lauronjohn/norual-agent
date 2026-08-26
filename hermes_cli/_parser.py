@@ -29,7 +29,7 @@ PRE_ARGPARSE_INHERITED_FLAGS: list[tuple[str, bool]] = [
 # norual-agent, nra — all the same entry point). Usage/help output should
 # match what the user actually invoked.
 _CONSOLE_PROG_NAMES: frozenset[str] = frozenset(
-    {"hermes", "hermes-agent", "norual-agent", "nra"}
+    {"hermes", "hermes-agent", "norual", "norual-agent", "nra"}
 )
 
 

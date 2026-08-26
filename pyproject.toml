@@ -378,6 +378,7 @@ build-backend = "setuptools.build_meta"
 hermes = "hermes_cli.main:main"
 hermes-agent = "run_agent:main"
 hermes-acp = "acp_adapter.entry:main"
+norual = "hermes_cli.main:main"
 norual-agent = "hermes_cli.main:main"
 nra = "hermes_cli.main:main"
 
