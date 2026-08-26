@@ -6652,12 +6652,18 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         width = width or self._get_tui_terminal_width()
         if width and width > 10:
             import math
-            text_width = self._status_bar_display_width(spinner_line)
+            # norual fork: account for the bolt fragment (2 spaces + bolt +
+            # 1 space) added by the spinner widget.
+            text_width = self._status_bar_display_width(spinner_line) + 4
             return max(1, math.ceil(text_width / width))
         return 1
 
     def _render_spinner_text(self) -> str:
-        """Return the live spinner/status text exactly as rendered in the TUI."""
+        """Return the live spinner/status text exactly as rendered in the TUI.
+
+        Plain text only — the pulsing bolt is rendered as a styled fragment
+        by the spinner widget (raw ANSI in a plain string renders literally).
+        """
         txt = getattr(self, "_spinner_text", "")
         # norual fork: when the agent is running with nothing specific to
         # report yet (cold start before the first wait notice), show a
@@ -6666,10 +6672,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             txt = "thinking"
         if not txt:
             return ""
-        # norual fork: prepend the breathing pulse so the spinner moves.
-        pulse = self._spinner_pulse()
-        if pulse:
-            txt = f"{pulse} {txt}"
         flow = self._spinner_token_flow()
         t0 = getattr(self, "_tool_start_time", 0) or 0
         if t0 > 0:
@@ -6994,12 +6996,13 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
     _BOLT_PULSE_FACTORS = (0.4, 0.6, 0.8, 1.0, 0.8, 0.6)
     _BOLT_GLYPH = "\u26a1\ufe0e"  # ⚡ + text-presentation selector (colored, not emoji)
 
-    def _spinner_pulse(self) -> str:
-        """Return the pulsing thunderbolt glyph (norual fork).
+    def _bolt_hex_color(self) -> str:
+        """Return the current bolt pulse color as a hex string.
 
-        The bolt breathes in brightness — dark → accent-bright → dark —
-        using the active skin's ``ui_accent`` color, so "thinking" pulses
-        without rotating any text.
+        The bolt breathes in brightness — dark accent → full accent → dark —
+        using the active skin's ``ui_accent`` color. Returned as a plain hex
+        so the caller can style a prompt_toolkit fragment (raw ANSI escapes
+        in a plain string would render as literal text).
         """
         idx = getattr(self, "_spinner_frame_idx", 0)
         accent = ""
@@ -7017,10 +7020,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             except ValueError:
                 pass
         f = self._BOLT_PULSE_FACTORS[idx % len(self._BOLT_PULSE_FACTORS)]
-        return (
-            f"\033[38;2;{int(r * f)};{int(g * f)};{int(b * f)}m"
-            f"{self._BOLT_GLYPH}\033[0m"
-        )
+        return f"#{int(r * f):02x}{int(g * f):02x}{int(b * f):02x}"
 
     def _spinner_anim_loop(self) -> None:
         """Advance the spinner face/verb + repaint while the agent is busy.
@@ -19716,7 +19716,14 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             spinner_line = cli_ref._render_spinner_text()
             if not spinner_line:
                 return []
-            return [('class:hint', spinner_line)]
+            # norual fork: the pulsing thunderbolt is a styled fragment (hex
+            # color per frame) so it renders as a colored bolt, not escape text.
+            bolt_color = cli_ref._bolt_hex_color()
+            return [
+                ('class:hint', '  '),
+                (f'class:hint {bolt_color}', cli_ref._BOLT_GLYPH),
+                ('class:hint', f' {spinner_line}'),
+            ]
 
         def get_spinner_height():
             return cli_ref._spinner_widget_height()
