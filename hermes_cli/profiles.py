@@ -240,7 +240,7 @@ _DEFAULT_EXPORT_EXCLUDE_ROOT = frozenset({
 _DEFAULT_EXPORT_INCLUDE_ROOT = frozenset({
     # Configuration / persona
     "config.yaml", "SOUL.md", "MEMORY.md", "USER.md", "todo.json",
-    "system_prompt.md", "AGENTS.md", "CLAUDE.md", ".cursorrules",
+    "system_prompt.md", "AGENTS.md", "CLAUDE.md", ".cursorrules", "NORUAL.md",
     # Desktop appearance/interface overlay (written by the desktop app's
     # profile export; applied by its import — see desktop.json handling).
     "desktop.json",

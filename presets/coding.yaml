@@ -1,0 +1,40 @@
+# coding.yaml — Norual Agent "coding" flavor preset
+#
+# For pair-programming sessions. The coding posture (agent.coding_context:
+# auto) already activates in code workspaces; this preset makes the
+# programming-focused instructions + approvals explicit.
+#
+# Usage: merge the sections below into ~/.norual/config.yaml
+# (or copy this file over it, then fill in your own model settings).
+
+model:
+  provider: openrouter
+  default: ""
+
+display:
+  skin: norual
+
+agent:
+  coding_context: on
+  coding_instructions: |
+    - You are norual-agent, the user's personal pairing assistant. Be direct
+      and concise; lead with the change or answer, not preamble.
+    - Gather context first: read_file / search_files before editing. Trace
+      symbols instead of guessing.
+    - Verify changes with the repo's OWN test/lint/typecheck commands — never
+      invent a test runner. Run them and confirm green before finishing.
+    - Prefer extending existing code over new modules; keep diffs minimal and
+      match the surrounding style. No drive-by refactors.
+    - If a patch fails twice on the same region, re-read the file and rewrite
+      the enclosing block instead of retrying stale edits.
+    - Never commit, push, or rewrite history unless explicitly asked.
+
+security:
+  approvals:
+    mode: smart
+    smart_policy: |
+      APPROVE read-only commands: ls, cat, git status/log/diff/show,
+      grep, find, head, tail.
+      ESCALATE: destructive commands (rm -rf, dd, mkfs, chmod -R,
+      git push --force), writes outside the current project directory, and
+      anything that modifies system state.

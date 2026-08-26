@@ -41,9 +41,26 @@ re-applying after upstream pulls stays mechanical.
 
 Not renamed (deliberate): internal modules (`hermes_*`), `HERMES_HOME` env var, `__version__` (update checks depend on it).
 
+### Phase 2 — coding flavor (complete)
+
+| File | Change | Re-apply notes |
+|---|---|---|
+| `agent/prompt_builder.py` | Added `NORUAL.md`/`norual.md` as priority-0 project context file (walks to git root, ahead of HERMES.md/AGENTS.md); `_find_norual_md` + `_load_norual_md` | Pure addition; upstream merges fine |
+| `agent/coding_context.py` | `_PROJECT_MARKERS` + `_CONTEXT_FILES` += `NORUAL.md` (a NORUAL.md-only dir counts as a code workspace) | Pure addition |
+| `agent/subdirectory_hints.py` | `_HINT_FILENAMES` += `NORUAL.md`, `norual.md` (first priority) | Pure addition |
+| `hermes_cli/profiles.py` | `_DEFAULT_EXPORT_INCLUDE_ROOT` += `NORUAL.md` | Pure addition |
+| `presets/` (new) | `coding.yaml`, `chat.yaml`, `README.md` — swap-able flavor configs | New dir |
+
+Assessment (no change needed): the `coding` posture toolset already exists
+(`toolsets.py`) and auto-activates in code workspaces (`agent.coding_context:
+auto`) with a senior-engineer brief; LSP subsystem is on by default
+(`agent.lsp.enabled: true`, on-demand servers, auto-install into HERMES_HOME);
+approvals default to `smart` with a custom `smart_policy` hook.
+
 ### User state (outside repo)
-- `~/.norual/config.yaml` — `model.provider: openrouter`, `model.default: ""` (auto-pick), `display.skin: norual`
-- `~/.norual/.env` — `OPENROUTER_API_KEY=` template (fill it in; secrets never committed)
+- `~/.norual/config.yaml` — now also: `agent.coding_context: auto`,
+  `agent.coding_instructions` (personal brief), `security.approvals.mode: smart`
+  + `smart_policy` (approve read-only, escalate destructive)
 
 ## Rebrand inventory (Phase 1 targets)
 

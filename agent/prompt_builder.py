@@ -100,6 +100,10 @@ def _find_git_root(start: Path) -> Optional[Path]:
 
 _HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
 
+# norual-agent fork: NORUAL.md is the fork-native project instruction file —
+# loaded ahead of HERMES.md so norual-specific instructions win.
+_NORUAL_MD_NAMES = ("NORUAL.md", "norual.md")
+
 
 def _find_hermes_md(cwd: Path) -> Optional[Path]:
     """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
@@ -2364,6 +2368,54 @@ def load_soul_md(
         return None
 
 
+def _find_norual_md(cwd: Path) -> Optional[Path]:
+    """Discover the nearest ``NORUAL.md`` or ``norual.md``.
+
+    norual-agent fork: same walk semantics as :func:`_find_hermes_md`
+    (cwd first, then parents up to the git root) but for the fork-native
+    instruction file.
+    """
+    stop_at = _find_git_root(cwd)
+    current = cwd.resolve()
+
+    search_dirs = [current, *current.parents] if stop_at else [current]
+
+    for directory in search_dirs:
+        for name in _NORUAL_MD_NAMES:
+            candidate = directory / name
+            if candidate.is_file():
+                return candidate
+        if stop_at and directory == stop_at:
+            break
+    return None
+
+
+def _load_norual_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
+    """NORUAL.md / norual.md — walk to git root (fork-native context file)."""
+    norual_md_path = _find_norual_md(cwd_path)
+    if not norual_md_path:
+        return ""
+    try:
+        content = norual_md_path.read_text(encoding="utf-8").strip()
+        if not content:
+            return ""
+        content = _strip_yaml_frontmatter(content)
+        rel = norual_md_path.name
+        try:
+            rel = str(norual_md_path.relative_to(cwd_path))
+        except ValueError:
+            pass
+        content = _scan_context_content(content, rel)
+        result = f"## {rel}\n\n{content}"
+        return _truncate_content(
+            result, "NORUAL.md", context_length=context_length,
+            read_path=str(norual_md_path),
+        )
+    except Exception as e:
+        logger.debug("Could not read %s: %s", norual_md_path, e)
+        return ""
+
+
 def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
     """.hermes.md / HERMES.md — walk to git root."""
     hermes_md_path = _find_hermes_md(cwd_path)
@@ -2537,6 +2589,7 @@ def build_context_files_prompt(
     """Discover and load context files for the system prompt.
 
     Priority (first found wins — only ONE project context type is loaded):
+      0. NORUAL.md / norual.md  (fork-native; walk to git root)
       1. .hermes.md / HERMES.md  (walk to git root)
       2. AGENTS.md / agents.md   (merged chain: git root → cwd)
       3. CLAUDE.md / claude.md   (cwd only)
@@ -2586,7 +2639,8 @@ def build_context_files_prompt(
     else:
         # Priority-based project context: first match wins
         project_context = (
-            _load_hermes_md(cwd_path, context_length)
+            _load_norual_md(cwd_path, context_length)
+            or _load_hermes_md(cwd_path, context_length)
             or _load_agents_md(cwd_path, context_length)
             or _load_claude_md(cwd_path, context_length)
             or _load_cursorrules(cwd_path, context_length)

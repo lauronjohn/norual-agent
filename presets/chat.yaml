@@ -1,0 +1,25 @@
+# chat.yaml — Norual Agent "chat/assistant" flavor preset
+#
+# For general conversation, research, and personal-assistant use outside code
+# workspaces. Keeps the coding posture off so the general posture + full
+# toolset apply everywhere.
+#
+# Usage: merge the sections below into ~/.norual/config.yaml
+# (or copy this file over it, then fill in your own model settings).
+
+model:
+  provider: openrouter
+  default: ""
+
+display:
+  skin: norual
+
+agent:
+  # off = never enter the coding posture; the general assistant posture
+  # (web research, memory, skills, browser, session search) stays active.
+  coding_context: off
+
+security:
+  approvals:
+    # General conversation rarely hits shell commands; keep prompts on.
+    mode: manual
