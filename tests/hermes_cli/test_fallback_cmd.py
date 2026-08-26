@@ -1,4 +1,4 @@
-"""Tests for `hermes fallback` — chain reading, add/remove/clear, legacy migration."""
+"""Tests for `norual fallback` — chain reading, add/remove/clear, legacy migration."""
 from __future__ import annotations
 
 import types
@@ -46,12 +46,12 @@ class TestReadChain:
         cfg = {
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-                {"provider": "nous", "model": "Hermes-4-Llama-3.1-405B"},
+                {"provider": "nous", "model": "Norual-4-Llama-3.1-405B"},
             ]
         }
         assert _read_chain(cfg) == [
             {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-            {"provider": "nous", "model": "Hermes-4-Llama-3.1-405B"},
+            {"provider": "nous", "model": "Norual-4-Llama-3.1-405B"},
         ]
 
 
@@ -93,14 +93,14 @@ class TestListCommand:
         cmd_fallback_list(types.SimpleNamespace())
         out = capsys.readouterr().out
         assert "No fallback providers configured" in out
-        assert "hermes fallback add" in out
+        assert "norual fallback add" in out
 
     def test_list_with_entries(self, isolated_home, capsys):
         _write_config(isolated_home, {
             "model": {"provider": "anthropic", "default": "claude-sonnet-4-6"},
             "fallback_providers": [
                 {"provider": "openrouter", "model": "anthropic/claude-sonnet-4.6"},
-                {"provider": "nous", "model": "Hermes-4"},
+                {"provider": "nous", "model": "Norual-4"},
             ],
         })
         from hermes_cli.fallback_cmd import cmd_fallback_list
@@ -108,7 +108,7 @@ class TestListCommand:
         out = capsys.readouterr().out
         assert "Fallback chain (2 entries)" in out
         assert "anthropic/claude-sonnet-4.6" in out
-        assert "Hermes-4" in out
+        assert "Norual-4" in out
         # Primary should be shown too
         assert "claude-sonnet-4-6" in out
 
@@ -227,12 +227,12 @@ class TestRemoveCommand:
         _write_config(isolated_home, {
             "fallback_providers": [
                 {"provider": "openrouter", "model": "gpt-5.4"},
-                {"provider": "nous", "model": "Hermes-4"},
+                {"provider": "nous", "model": "Norual-4"},
                 {"provider": "anthropic", "model": "claude-sonnet-4-6"},
             ],
         })
 
-        # Picker returns index 1 (the middle entry, "nous / Hermes-4")
+        # Picker returns index 1 (the middle entry, "nous / Norual-4")
         with patch("hermes_cli.setup._curses_prompt_choice", return_value=1):
             from hermes_cli.fallback_cmd import cmd_fallback_remove
             cmd_fallback_remove(types.SimpleNamespace())
@@ -244,7 +244,7 @@ class TestRemoveCommand:
         ]
         out = capsys.readouterr().out
         assert "Removed fallback" in out
-        assert "Hermes-4" in out
+        assert "Norual-4" in out
 
 
 # ---------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class TestClearCommand:
         _write_config(isolated_home, {
             "fallback_providers": [
                 {"provider": "openrouter", "model": "gpt-5.4"},
-                {"provider": "nous", "model": "Hermes-4"},
+                {"provider": "nous", "model": "Norual-4"},
             ],
         })
         monkeypatch.setattr("builtins.input", lambda *a, **kw: "y")
@@ -289,7 +289,7 @@ class TestDispatcher:
 # ---------------------------------------------------------------------------
 
 class TestArgparseWiring:
-    """Verify `hermes fallback` is wired into main.py's argparse tree.
+    """Verify `norual fallback` is wired into main.py's argparse tree.
 
     main() builds the parser inline, so we invoke main([...]) via subprocess
     with --help to introspect registered subcommands without side effects.

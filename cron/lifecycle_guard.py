@@ -71,7 +71,7 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # matching via the `/hermes` tail, while every real command position
     # (start of text, whitespace, `;`/`&`/`|`, `$(`, backtick, even a
     # U+FFFD from binary-content decoding) still matches.
-    r"(?:(?<![/\w.\-])hermes\s+gateway\s+(?:restart|stop|uninstall)\b)"
+    r"(?:(?<![/\w.\-])(?:hermes|norual)\s+gateway\s+(?:restart|stop|uninstall)\b)"
     # Branch B: launchctl ops on a hermes-gateway label. macOS launchd
     # labels look like `ai.hermes.gateway` / `hermes-gateway`. Requiring the
     # gateway identifier prevents blocking unrelated norual services (e.g.
@@ -91,14 +91,14 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     # left the bypassable approval layer (tools/approval.py, skipped on
     # force=True) as the only cover, while this hard block — documented as
     # "force=True cannot help here" — let them through (#80260).
-    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart|submit|bootstrap|bootout|remove|disable)\b[^\n]*\bhermes[.\-]?gateway)"
+    r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart|submit|bootstrap|bootout|remove|disable)\b[^\n]*\b(?:hermes|norual)[.\-]?gateway)"
     # Branch C: systemctl ops on a hermes-gateway unit.
-    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bhermes[.\-]?gateway)"
+    r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\b(?:hermes|norual)[.\-]?gateway)"
     # Branch D: pkill / kill targeting the norual gateway process. Both
     # token orders because real reproductions show both.
     # Leading \b ensures we match "pkill" or "kill" as whole words, not as
     # suffixes of other words (e.g. "skill" -> "kill").
-    r"|(?:\bp?kill\b[^\n]*\bhermes\b[^\n]*\bgateway)"
+    r"|(?:\bp?kill\b[^\n]*\b(?:hermes|norual)\b[^\n]*\bgateway)"
     r"|(?:\bp?kill\b[^\n]*\bgateway\b[^\n]*\bhermes)"
 )
 
@@ -134,7 +134,7 @@ _ARGV_LIST_PUNCTUATION = re.compile(r"[\[\],]+")
 # `start` stays excluded for the same reason as Branch A.
 _PROFILE_FLAG_LIFECYCLE_PATTERN = re.compile(
     r"(?i)"
-    r"hermes\s+"
+    r"(?:hermes|norual)\s+"
     # Any global flags before the profile selector (each may carry a value).
     r"(?:-{1,2}\S+(?:\s+\S+)?\s+)*"
     # The selector itself: `--profile=<name>` or the space-separated
@@ -202,7 +202,7 @@ def _named_profile_is_current(named: str) -> bool:
 _LAUNCHCTL_LIFECYCLE_VERBS_RE = re.compile(
     r"(?i)\blaunchctl\s+(?:kickstart|unload|load|stop|restart|bootout|kill|disable|remove)\b"
 )
-_HERMES_GATEWAY_LABEL_RE = re.compile(r"(?i)\bhermes[.\-]?gateway\b")
+_HERMES_GATEWAY_LABEL_RE = re.compile(r"(?i)\b(?:hermes|norual)[.\-]?gateway\b")
 
 
 def _contains_launchctl_gateway_lifecycle(normalized_text: str) -> bool:

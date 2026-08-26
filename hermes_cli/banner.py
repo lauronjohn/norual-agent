@@ -1006,7 +1006,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             preset_name = preset_name[:25] + "..."
         agg_str = f" [dim {dim}]·[/] [dim {dim}]agg {agg_label}[/]" if agg_label else ""
         ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
-        left_lines.append(f"[{accent}]MoA: {preset_name}[/]{agg_str}{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
+        left_lines.append(f"[{accent}]MoA: {preset_name}[/]{agg_str}{ctx_str}")
     else:
         if not (model or "").strip() or (model or "").strip().lower() == "unknown":
             # Unconfigured install: say so in red instead of a blank/"unknown"
@@ -1023,7 +1023,7 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             if len(model_short) > 28:
                 model_short = model_short[:25] + "..."
             ctx_str = f" [dim {dim}]·[/] [dim {dim}]{_format_context_length(context_length)} context[/]" if context_length else ""
-            left_lines.append(f"[{accent}]{model_short}[/]{ctx_str} [dim {dim}]·[/] [dim {dim}]Nous Research[/]")
+            left_lines.append(f"[{accent}]{model_short}[/]{ctx_str}")
 
     if os.getenv("HERMES_YOLO_MODE"):
         left_lines.append(f"[bold red]⚠ YOLO mode[/] [dim {dim}]— all approval prompts bypassed[/]")
@@ -1170,6 +1170,16 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     if not _skills_enabled:
         right_lines.append(f"[dim {dim}]Skills toolset disabled[/]")
     elif skills_by_category:
+        # norual fork: cap how many skill names the banner lists
+        # (display.banner_max_skills, 0 = unlimited) so the box stays
+        # compact and the logo/title remain visible on one screen.
+        _max_skills = 6
+        try:
+            from hermes_cli.config import load_config as _load_cfg
+            _max_skills = int((_load_cfg() or {}).get("display", {}).get("banner_max_skills", 6) or 0)
+        except Exception:
+            pass
+        _shown = 0
         for category in sorted(skills_by_category.keys()):
             skill_names = sorted(skills_by_category[category])
             # Account for "category: " prefix
@@ -1178,19 +1188,33 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
             # Accumulate skills until we run out of space
             parts, length = [], 0
             for i, name in enumerate(skill_names):
+                if _max_skills > 0 and _shown >= _max_skills:
+                    break
                 _sep = ", " if parts else ""
                 _needed = len(_sep) + len(name)
-                # Estimate indicator size IF we were to add this skill then stop
-                _after = len(skill_names) - (i + 1)  # remaining after adding this
-                _ind_len = len(f", +{_after} more") if _after > 0 else 0
-                if parts and length + _needed + _ind_len > _avail:
-                    remaining = len(skill_names) - len(parts)
-                    parts.append(f"+{remaining} more")
-                    break
+                if _max_skills > 0:
+                    # Capped mode: the footer below counts anything omitted,
+                    # so a full line just stops collecting.
+                    if parts and length + _needed > _avail:
+                        break
+                else:
+                    # Estimate indicator size IF we were to add this skill then stop
+                    _after = len(skill_names) - (i + 1)  # remaining after adding this
+                    _ind_len = len(f", +{_after} more") if _after > 0 else 0
+                    if parts and length + _needed + _ind_len > _avail:
+                        remaining = len(skill_names) - len(parts)
+                        parts.append(f"+{remaining} more")
+                        break
                 parts.append(name)
                 length += _needed
+                _shown += 1
             skills_str = ", ".join(parts)
-            right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
+            if parts:
+                right_lines.append(f"[dim {dim}]{category}:[/] [{text}]{skills_str}[/]")
+        if _max_skills > 0 and _shown < total_skills:
+            right_lines.append(
+                f"[dim {dim}]… {total_skills - _shown} more — /skills to browse[/]"
+            )
     else:
         right_lines.append(f"[dim {dim}]No skills installed[/]")
 

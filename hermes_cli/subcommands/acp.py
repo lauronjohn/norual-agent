@@ -1,4 +1,4 @@
-"""``hermes acp`` subcommand parser.
+"""``norual acp`` subcommand parser.
 
 Extracted from ``hermes_cli/main.py:main()`` (god-file Phase 2 follow-up).
 Handler injected to avoid importing ``main``.
@@ -23,7 +23,7 @@ def build_acp_parser(subparsers, *, cmd_acp: Callable) -> None:
         "--version",
         action="store_true",
         dest="acp_version",
-        help="Print Hermes ACP version and exit",
+        help="Print Norual ACP version and exit",
     )
     acp_parser.add_argument(
         "--check",
@@ -33,7 +33,7 @@ def build_acp_parser(subparsers, *, cmd_acp: Callable) -> None:
     acp_parser.add_argument(
         "--setup",
         action="store_true",
-        help="Run interactive Hermes provider/model setup for ACP terminal auth",
+        help="Run interactive Norual provider/model setup for ACP terminal auth",
     )
     acp_parser.add_argument(
         "--setup-browser",

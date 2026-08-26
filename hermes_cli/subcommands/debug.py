@@ -1,4 +1,4 @@
-"""``hermes debug`` subcommand parser.
+"""``norual debug`` subcommand parser.
 
 Extracted verbatim from ``hermes_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -24,14 +24,14 @@ def build_debug_parser(subparsers, *, cmd_debug: Callable) -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""\
 Examples:
-    hermes debug share              Upload debug report (asks for confirmation)
-    hermes debug share --yes        Skip confirmation (for scripts/CI)
-    hermes debug share --lines 500  Include more log lines
-    hermes debug share --expire 30  Keep paste for 30 days
-    hermes debug share --local      Print report locally (no upload)
-    hermes debug share --no-redact  Disable upload-time secret redaction
-    hermes debug share --nous       Upload to Nous-internal storage (private)
-    hermes debug delete <url>       Delete a previously uploaded paste
+    norual debug share              Upload debug report (asks for confirmation)
+    norual debug share --yes        Skip confirmation (for scripts/CI)
+    norual debug share --lines 500  Include more log lines
+    norual debug share --expire 30  Keep paste for 30 days
+    norual debug share --local      Print report locally (no upload)
+    norual debug share --no-redact  Disable upload-time secret redaction
+    norual debug share --nous       Upload to Nous-internal storage (private)
+    norual debug delete <url>       Delete a previously uploaded paste
 """,
     )
     debug_sub = debug_parser.add_subparsers(dest="debug_command")
@@ -89,7 +89,7 @@ Examples:
     )
     delete_parser = debug_sub.add_parser(
         "delete",
-        help="Delete a paste uploaded by 'hermes debug share'",
+        help="Delete a paste uploaded by 'norual debug share'",
     )
     delete_parser.add_argument(
         "urls",

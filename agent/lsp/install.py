@@ -10,7 +10,7 @@ Strategies:
 - ``auto`` — attempt to install with the best available package
   manager.  This is the default.
 - ``manual`` — never install; if a binary is missing, the server is
-  silently skipped and the user is told about it via ``hermes lsp
+  silently skipped and the user is told about it via ``norual lsp
   status``.
 - ``off`` — same as ``manual`` for now (kept distinct so we can
   evolve behavior later, e.g. logging differently).
@@ -107,7 +107,7 @@ INSTALL_RECIPES: Dict[str, Dict[str, Any]] = {
     # PowerShell — PowerShellEditorServices ships as a GitHub release
     # zip driven by a pwsh bootstrap script, not a single binary.  We
     # require a manual bundle install and probe for the pwsh host so
-    # `hermes lsp status` reports the host's presence.
+    # `norual lsp status` reports the host's presence.
     "powershell": {"strategy": "manual", "pkg": "", "bin": "pwsh"},
 }
 
@@ -392,7 +392,7 @@ def _install_pip(pkg: str, bin_name: str) -> Optional[str]:
 def detect_status(pkg: str) -> str:
     """Return ``installed``, ``missing``, or ``manual-only`` for a package.
 
-    Used by the ``hermes lsp status`` CLI to give users a quick
+    Used by the ``norual lsp status`` CLI to give users a quick
     overview of what's available without spawning anything.
     """
     recipe = INSTALL_RECIPES.get(pkg)

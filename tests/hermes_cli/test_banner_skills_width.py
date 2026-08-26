@@ -10,8 +10,12 @@ import model_tools
 import tools.mcp_tool
 
 
-def _build_banner_with_skills(skills_by_category, term_width=160):
-    """Helper: build banner with given skills and return captured output."""
+def _build_banner_with_skills(skills_by_category, term_width=160, max_skills=0):
+    """Helper: build banner with given skills and return captured output.
+
+    ``max_skills`` maps to ``display.banner_max_skills``; 0 = unlimited
+    (legacy width-truncation behavior, which these tests exercise).
+    """
     with (
         patch.object(
             model_tools,
@@ -21,7 +25,14 @@ def _build_banner_with_skills(skills_by_category, term_width=160):
         patch.object(banner, "get_available_skills", return_value=skills_by_category),
         patch.object(banner, "get_update_result", return_value=None),
         patch.object(tools.mcp_tool, "get_mcp_status", return_value=[]),
-        patch("shutil.get_terminal_size", return_value=os.terminal_size((term_width, 50))),
+        patch(
+            "shutil.get_terminal_size",
+            return_value=os.terminal_size((term_width, 50)),
+        ),
+        patch(
+            "hermes_cli.config.load_config",
+            return_value={"display": {"banner_max_skills": max_skills}},
+        ),
     ):
         console = Console(
             record=True, force_terminal=False, color_system=None, width=term_width
@@ -65,3 +76,24 @@ def test_skills_respect_category_label_width():
 
     # Should still show at least some skills
     assert "skill-00" in text
+
+
+def test_banner_max_skills_caps_listed_skills():
+    """display.banner_max_skills caps how many skill names the banner lists."""
+    skills = {"research": [f"skill-{i:02d}" for i in range(15)]}
+    text = _build_banner_with_skills(skills, term_width=200, max_skills=6)
+
+    assert "skill-00" in text
+    assert "skill-05" in text
+    assert "skill-06" not in text
+    # Footer reports the uncounted remainder instead of dropping them silently
+    assert "9 more" in text
+
+
+def test_banner_max_skills_zero_is_unlimited():
+    """banner_max_skills=0 keeps the legacy behavior of listing everything."""
+    skills = {"research": [f"skill-{i:02d}" for i in range(15)]}
+    text = _build_banner_with_skills(skills, term_width=200, max_skills=0)
+
+    assert "skill-08" in text  # width truncation, not the cap, applies
+    assert "9 more" not in text

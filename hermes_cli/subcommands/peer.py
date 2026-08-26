@@ -1,18 +1,18 @@
-"""``hermes peer`` — bot-to-bot DMs across machines/gateways.
+"""``norual peer`` — bot-to-bot DMs across machines/gateways.
 
-A *peer* is another Hermes gateway (any machine: homelab, Spark, Hermes
+A *peer* is another Norual gateway (any machine: homelab, Spark, Norual
 Cloud) running the ``api_server`` platform. Registering it here gives every
 bot on THIS machine a transport to message bots on THAT machine:
 
-    hermes peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>
-    hermes peer dm spark "Message from 🤖 dixie (@dixie): disk status?"
-    hermes peer dm spark/researcher "..."      # named profile (multiplexed peer)
+    norual peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>
+    norual peer dm spark "Message from 🤖 dixie (@dixie): disk status?"
+    norual peer dm spark/researcher "..."      # named profile (multiplexed peer)
 
 ``dm`` resolves the remote agent's canonical "Bot Chat" session (by title,
 creating it when missing), runs ONE synchronous agent turn over the peer's
 existing ``POST /api/sessions/{id}/chat`` endpoint, and prints the reply on
 stdout — the exact cross-machine twin of the local
-``hermes -p <bot> chat --in ~ -c "Bot Chat" ...`` bot-messaging command, so
+``norual -p <bot> chat --in ~ -c "Bot Chat" ...`` bot-messaging command, so
 the Bot Mode protocol composes over it unchanged.
 
 Design notes:
@@ -165,7 +165,7 @@ def _parse_target(target: str) -> tuple[str, str | None]:
     peer = peer.strip()
     profile = profile.strip() or None
     if not peer:
-        raise ValueError("Peer name required (hermes peer dm <peer>[/<agent>] ...)")
+        raise ValueError("Peer name required (norual peer dm <peer>[/<agent>] ...)")
     if profile and not _PROFILE_RE.match(profile):
         raise ValueError(f"Invalid agent/profile name: {profile!r}")
     return peer, profile
@@ -205,7 +205,7 @@ def cmd_peer(args) -> int:
         else:
             print(
                 f"Peer '{name}' saved ({url}). No key given — set the peer's API_SERVER_KEY with:\n"
-                f"  hermes peer add {name} --url {url} --key <key>\n"
+                f"  norual peer add {name} --url {url} --key <key>\n"
                 f"  (or add {_peer_key_env(name)}=<key> to ~/.hermes/.env)"
             )
         return 0
@@ -224,7 +224,7 @@ def cmd_peer(args) -> int:
     if action in ("list", "ls", None):
         peers = _load_peers()
         if not peers:
-            print("No peers registered. Add one: hermes peer add <name> --url http://host:port --key <API_SERVER_KEY>")
+            print("No peers registered. Add one: norual peer add <name> --url http://host:port --key <API_SERVER_KEY>")
             return 0
         for name in sorted(peers):
             entry = peers[name] if isinstance(peers[name], dict) else {}
@@ -242,12 +242,12 @@ def cmd_peer(args) -> int:
         peers = _load_peers()
         peer = peers.get(peer_name)
         if not isinstance(peer, dict) or not peer.get("url"):
-            print(f"No peer named '{peer_name}'. Run: hermes peer list", file=sys.stderr)
+            print(f"No peer named '{peer_name}'. Run: norual peer list", file=sys.stderr)
             return 1
         key = _peer_secret(peer_name)
         if not key:
             print(
-                f"No API key for peer '{peer_name}'. Set it: hermes peer add {peer_name} "
+                f"No API key for peer '{peer_name}'. Set it: norual peer add {peer_name} "
                 f"--url <url> --key <key> (or add {_peer_key_env(peer_name)}=<key> to ~/.hermes/.env)",
                 file=sys.stderr,
             )
@@ -289,7 +289,7 @@ def cmd_peer(args) -> int:
             print(reply or "(no reply)")
         return 0
 
-    print("Unknown peer action. See: hermes peer --help", file=sys.stderr)
+    print("Unknown peer action. See: norual peer --help", file=sys.stderr)
     return 2
 
 
@@ -297,22 +297,22 @@ def build_peer_parser(subparsers) -> None:
     """Attach the ``peer`` subcommand to ``subparsers``."""
     parser = subparsers.add_parser(
         "peer",
-        help="Bot-to-bot DMs across machines (peer Hermes gateways)",
+        help="Bot-to-bot DMs across machines (peer Norual gateways)",
         description=(
-            "Register other Hermes gateways as peers and message their agents. "
-            "'hermes peer dm <peer>[/<agent>] \"...\"' delivers into the remote "
+            "Register other Norual gateways as peers and message their agents. "
+            "'norual peer dm <peer>[/<agent>] \"...\"' delivers into the remote "
             "agent's canonical Bot Chat over the peer's API server and prints "
-            "the reply — the cross-machine twin of 'hermes -p <bot> chat'. "
+            "the reply — the cross-machine twin of 'norual -p <bot> chat'. "
             "The peer must run the api_server platform; its API_SERVER_KEY is "
             "stored locally as a credential in ~/.hermes/.env."
         ),
         epilog=(
             "Examples:\n"
-            "  hermes peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>\n"
-            "  hermes peer list\n"
-            '  hermes peer dm spark "Message from 🤖 dixie (@dixie): disk status?"\n'
-            '  hermes peer dm spark/researcher "..."   # named profile on a multiplexed peer\n'
-            "  hermes peer remove spark\n"
+            "  norual peer add spark --url http://spark.lan:8377 --key <API_SERVER_KEY>\n"
+            "  norual peer list\n"
+            '  norual peer dm spark "Message from 🤖 dixie (@dixie): disk status?"\n'
+            '  norual peer dm spark/researcher "..."   # named profile on a multiplexed peer\n'
+            "  norual peer remove spark\n"
             "\n"
             "Exit codes: 0 ok, 1 delivery/peer error, 2 usage error."
         ),

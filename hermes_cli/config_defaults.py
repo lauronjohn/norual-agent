@@ -1321,6 +1321,10 @@ DEFAULT_CONFIG = {
     
     "display": {
         "compact": False,
+        # How many skill names the startup banner's "Available Skills"
+        # section lists. Kept small so the banner box stays compact and
+        # the logo/title fit on one screen; 0 = show every skill (legacy).
+        "banner_max_skills": 6,
         "personality": "",
         "resume_display": "full",
         # Recap tuning for /resume and startup resume. The defaults match the

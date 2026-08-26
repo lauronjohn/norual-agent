@@ -92,7 +92,7 @@ class TestLoadConfigParseFailure:
     Before issue #23570 this was a single ``print(...)`` that scrolled past
     on the first invocation — users saw aux-fallback misbehavior with no clue
     their config.yaml was being ignored. The helper must:
-      * log at WARNING (so ``hermes logs`` surfaces it)
+      * log at WARNING (so ``norual logs`` surfaces it)
       * also write to stderr (so it's visible at startup even before
         ``setup_logging()`` has wired up file handlers)
       * dedup on (path, mtime_ns, size) so concurrent loads don't spam
@@ -519,7 +519,7 @@ class TestOptionalEnvVarsRegistry:
     def test_max_iterations_not_offered_as_env_var(self):
         """HERMES_MAX_ITERATIONS must NOT be in OPTIONAL_ENV_VARS (issue #17534).
 
-        Offering it as an editable env var (dashboard, `hermes setup`) lets a
+        Offering it as an editable env var (dashboard, `norual setup`) lets a
         user write it to .env, recreating the stale ghost that shadows
         config.yaml's agent.max_turns. The iteration budget is configured ONLY
         via config.yaml; HERMES_MAX_ITERATIONS remains a read-only backward-compat
@@ -532,7 +532,7 @@ class TestOptionalEnvVarsRegistry:
 class TestMemoryProviderEnvVarsRegistry:
     """Every memory provider that reads an API key from the environment must
     have that key catalogued in OPTIONAL_ENV_VARS so the dashboard Keys page
-    and `hermes setup` surface it (previously only Honcho was listed, leaving
+    and `norual setup` surface it (previously only Honcho was listed, leaving
     Hindsight/Supermemory/Mem0/RetainDB/ByteRover/OpenViking invisible).
 
     This is a behavior contract, not a snapshot: it asserts each provider's
@@ -659,7 +659,7 @@ class TestConfigSupportFloor:
         )
         assert expected_fragment in captured.out
         assert expected_fragment in captured.err
-        assert "run `hermes setup` to regenerate" in captured.out
+        assert "run `norual setup` to regenerate" in captured.out
         assert "_config_version: 12" in captured.out
         assert any(expected_fragment in w for w in results["warnings"])
         # No 'Config version: X → Y' line — nothing was migrated.
@@ -1056,7 +1056,7 @@ class TestEnvWriteDenylist:
     the session token lives in the SPA's HTML where any future plugin
     XSS or local process could exfiltrate it). Without this gate, an
     attacker who steals the token could plant
-    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next Hermes
+    ``LD_PRELOAD=/tmp/evil.so`` in ``.env`` and own the next Norual
     process on next startup via the dotenv → ``os.environ`` chain in
     ``hermes_cli/env_loader.py``.
 

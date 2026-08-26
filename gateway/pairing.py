@@ -63,7 +63,7 @@ MAX_FAILED_ATTEMPTS = 5             # Failed approvals before lockout
 # at that exact import moment for the rest of the process's lifetime --
 # even if a context-local override (see hermes_constants.set_hermes_home_override)
 # is established afterward. A freshly-started, short-lived process (e.g. the
-# ``hermes pairing`` CLI) re-imports this module later with the final
+# ``norual pairing`` CLI) re-imports this module later with the final
 # environment already in place, so it never observes the stale value -- the
 # resulting asymmetry is what made pending pairing codes issued by the
 # gateway unrecoverable while CLI-side writes to the same directory kept
@@ -443,7 +443,7 @@ class PairingStore:
 
     When constructed with ``profile="<name>"``, storage resolves from that
     profile's own HERMES_HOME using the same legacy/consolidated layout rules
-    as ``hermes -p <name> pairing ...``. This keeps multiplex gateways and
+    as ``norual -p <name> pairing ...``. This keeps multiplex gateways and
     profile-scoped CLI approvals on one whitelist. Without a profile, storage
     is the global pairing directory for the current HERMES_HOME.
     """
@@ -468,7 +468,7 @@ class PairingStore:
         self._dir.mkdir(parents=True, exist_ok=True)
         if profile:
             # Explicit stores must resolve exactly as a standalone
-            # ``hermes -p <profile> pairing ...`` process does. Merge the
+            # ``norual -p <profile> pairing ...`` process does. Merge the
             # alternate old/new layout so upgrades cannot split approvals.
             _migrate_split_pairing_dirs(home=profile_home, active=self._dir)
         else:
@@ -515,9 +515,9 @@ class PairingStore:
                 euid = os.geteuid() if hasattr(os, "geteuid") else "n/a"
                 logger.warning(
                     "Pairing file %s exists but is not readable as uid=%s (%s; %s). "
-                    "If you ran `docker exec <container> hermes pairing approve ...` as root, "
-                    "re-run with `docker exec -u hermes <container> ...` and "
-                    "chown the existing file to the hermes user, or restart the "
+                    "If you ran `docker exec <container> norual pairing approve ...` as root, "
+                    "re-run with `docker exec -u norual <container> ...` and "
+                    "chown the existing file to the norual user, or restart the "
                     "container so the entrypoint can fix ownership.",
                     path, euid, owner_info, e,
                 )

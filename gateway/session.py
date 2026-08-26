@@ -364,7 +364,7 @@ def _slack_tools_loaded() -> bool:
     """True iff the agent will actually have Slack tools this session.
 
     Two independent paths grant Slack capability:
-      1. Native `slack` toolset enabled via `hermes tools` (opt-in, default
+      1. Native `slack` toolset enabled via `norual tools` (opt-in, default
          OFF) AND `SLACK_BOT_TOKEN` set — the tool's `check_fn` gates on it
          at registry time, so config alone isn't enough.
       2. An MCP server that has ACTUALLY registered tools into the live
@@ -423,7 +423,7 @@ def _discord_tools_loaded() -> bool:
 
     Two conditions must hold:
       1. The `discord` or `discord_admin` toolset is enabled for the
-         Discord platform via `hermes tools` (opt-in, default OFF).
+         Discord platform via `norual tools` (opt-in, default OFF).
       2. `DISCORD_BOT_TOKEN` is set — the tool's `check_fn` gates on it
          at registry time, so the toolset being enabled in config is not
          enough if the token isn't configured.
@@ -630,7 +630,7 @@ def build_session_context_prompt(
     elif context.source.platform == Platform.DISCORD:
         # Inject the Discord IDs block only when the agent actually has
         # Discord tools loaded this session — i.e. the user opted into
-        # `discord` / `discord_admin` via `hermes tools` AND the bot
+        # `discord` / `discord_admin` via `norual tools` AND the bot
         # token is configured.  Otherwise keep the stale-API disclaimer
         # honest so we never promise tools the agent lacks.
         if _discord_tools_loaded():
@@ -1037,7 +1037,7 @@ def build_channel_continuity_note(
 
     where = "thread" if source.thread_id else "channel"
     return (
-        f"[System note: This {where} had an earlier Hermes session "
+        f"[System note: This {where} had an earlier Norual session "
         f"(session_id: {prev}) that was auto-reset. If the user refers to "
         f"earlier work here, or the request depends on this {where}'s history, "
         f"use the session_search tool to recall that prior session before "
@@ -1780,7 +1780,7 @@ class SessionStore:
                 "Maps messaging session keys (agent:main:<platform>:...) to "
                 "active session IDs. This is NOT the session list. ALL "
                 "sessions (CLI, TUI, and gateway) live in ~/.hermes/state.db "
-                "and are shown by `hermes sessions list` and `/sessions`. "
+                "and are shown by `norual sessions list` and `/sessions`. "
                 "Disable this file with `gateway.write_sessions_json: false` "
                 "in config.yaml."
             ),

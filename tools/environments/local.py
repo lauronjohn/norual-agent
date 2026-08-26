@@ -56,7 +56,7 @@ def _resolve_local_initial_cwd(cwd: str) -> str:
 
     ``TERMINAL_CWD`` can be populated from config.yaml before the terminal
     backend is created.  If that value is relative and happens to match the
-    directory Hermes was already launched from (for example ``hermes-agent``
+    directory Norual was already launched from (for example ``hermes-agent``
     while the process cwd is ``~/.hermes/hermes-agent``), passing it through
     unchanged makes the wrapper run ``cd hermes-agent`` *inside* the project
     and fail with a confusing nested-path error.  Anchor relative local cwd
@@ -78,7 +78,7 @@ def _resolve_local_initial_cwd(cwd: str) -> str:
     candidate = os.path.abspath(expanded)
     current = os.getcwd()
 
-    # Common recovery for config values like ``hermes-agent`` when Hermes was
+    # Common recovery for config values like ``hermes-agent`` when Norual was
     # launched from that directory already.  ``os.path.abspath`` would point at
     # a nonexistent nested ``./hermes-agent``; use the current directory instead.
     if not os.path.isdir(candidate):
@@ -198,12 +198,12 @@ def _resolve_safe_cwd(cwd: str) -> str:
     return tempfile.gettempdir()
 
 
-# Hermes-internal env vars that should NOT leak into terminal subprocesses.
+# Norual-internal env vars that should NOT leak into terminal subprocesses.
 _HERMES_PROVIDER_ENV_FORCE_PREFIX = "_HERMES_FORCE_"
 
-# Hermes-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
+# Norual-managed AWS *inference* credentials for ``auth_type="aws_sdk"``
 # providers (Bedrock).  Scoped DELIBERATELY NARROW: this lists only the
-# Bedrock-specific bearer token, which is a Hermes inference secret exactly
+# Bedrock-specific bearer token, which is a Norual inference secret exactly
 # analogous to ``OPENAI_API_KEY`` — nobody drives the ``aws``/``terraform``/
 # ``boto3`` toolchain off it, so stripping it from terminal/execute_code
 # subprocesses costs no user capability.
@@ -324,8 +324,8 @@ def _build_provider_env_blocklist() -> frozenset:
     })
     # CLAUDE_CODE_OAUTH_TOKEN is deliberately NOT stripped.  It is set and
     # owned by the user's Claude Code install (subscription OAuth), not a
-    # Hermes-managed inference credential — Claude subscription auth is not a
-    # working Hermes provider path.  Stripping it broke agent-spawned
+    # Norual-managed inference credential — Claude subscription auth is not a
+    # working Norual provider path.  Stripping it broke agent-spawned
     # ``claude`` CLIs: the child fell through to the shared macOS Keychain /
     # ``~/.claude/.credentials.json`` store and, on auth failure, cleared it,
     # logging the user out of their interactive Claude sessions (#55878).
@@ -342,29 +342,29 @@ _HERMES_PROVIDER_ENV_BLOCKLIST = _build_provider_env_blocklist()
 # VIRTUAL_ENV (and possibly CONDA_PREFIX). If those leak into commands the
 # agent runs against OTHER Python projects, tools like ``uv``/``poetry`` treat
 # the inherited value as the active environment and build/sync that other
-# project's dependencies into the Hermes venv path instead of the project's own
-# ``.venv`` — silently clobbering the Hermes environment (e.g. a project pinned
+# project's dependencies into the Norual venv path instead of the project's own
+# ``.venv`` — silently clobbering the Norual environment (e.g. a project pinned
 # to a different Python version overwrites it and breaks the gateway). The
-# Hermes venv stays reachable via PATH (its bin dir is first), so stripping
+# Norual venv stays reachable via PATH (its bin dir is first), so stripping
 # these markers is safe and only prevents the cross-project clobber (#23473).
 #
 # PYTHONHOME is included because a gateway-inherited value redirects the
 # standard-library search of ANY child interpreter — including unrelated
-# system/venv Pythons — to the Hermes venv's stdlib, which crashes with
+# system/venv Pythons — to the Norual venv's stdlib, which crashes with
 # version-mismatch errors before a child script even imports a package
-# (#75018). Hermes itself treats PYTHONHOME as contamination in its own
+# (#75018). Norual itself treats PYTHONHOME as contamination in its own
 # child processes (managed_uv.py, sqlite_runtime.py), so stripping it from
 # subprocess envs is consistent. Users who need PYTHONHOME for a specific
 # child can set it explicitly in the command.
 #
 # PYTHONPATH is NOT included here — it's handled by
-# _strip_hermes_owned_pythonpath() which removes only Hermes-owned entries,
+# _strip_hermes_owned_pythonpath() which removes only Norual-owned entries,
 # preserving user-set paths.
 _ACTIVE_VENV_MARKER_VARS = ("VIRTUAL_ENV", "CONDA_PREFIX", "PYTHONHOME")
 
 
 def _is_hermes_internal_secret(key: str) -> bool:
-    """Return True for Hermes-internal secrets injected under *dynamic* names.
+    """Return True for Norual-internal secrets injected under *dynamic* names.
 
     ``_HERMES_PROVIDER_ENV_BLOCKLIST`` is name-based and derived from the
     provider/tool registries, but the gateway and CLI also inject secrets into
@@ -388,7 +388,7 @@ def _is_hermes_internal_secret(key: str) -> bool:
     ``KEY`` / ``SECRET`` / ``TOKEN``; the terminal backend's narrower name-based
     blocklist did not, which is the leak this predicate closes.
 
-    This is the single source of truth for "Hermes-internal dynamic secret"
+    This is the single source of truth for "Norual-internal dynamic secret"
     across every spawn path — the terminal ``_make_run_env`` /
     ``_sanitize_subprocess_env`` filters, the Docker passthrough filter, and the
     non-terminal :func:`hermes_subprocess_env` helper all call it, so the
@@ -425,7 +425,7 @@ def _plugin_terminal_env_strip_keys() -> frozenset:
 
 
 def _inject_context_hermes_home(env: dict) -> None:
-    """Bridge the context-local Hermes home override into subprocess env."""
+    """Bridge the context-local Norual home override into subprocess env."""
     try:
         from hermes_constants import get_hermes_home_override
 
@@ -484,7 +484,7 @@ def _inject_session_context_env(env: dict) -> None:
 
 
 def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = None) -> dict:
-    """Filter Hermes-managed secrets from a subprocess environment."""
+    """Filter Norual-managed secrets from a subprocess environment."""
     try:
         from tools.env_passthrough import (
             is_env_passthrough as _is_passthrough,
@@ -540,7 +540,7 @@ def _sanitize_subprocess_env(base_env: dict | None, extra_env: dict | None = Non
 
     # Filter PYTHONPATH before removing VIRTUAL_ENV: legacy Windows launchers
     # can run the gateway under a base interpreter while VIRTUAL_ENV identifies
-    # the separate Hermes runtime venv.  The filter validates that relationship
+    # the separate Norual runtime venv.  The filter validates that relationship
     # against the repo layout before trusting it.
     _strip_hermes_owned_pythonpath_and_runtime_markers(sanitized)
 
@@ -577,7 +577,7 @@ def _scrub_delegated_child_kanban_env(env: dict[str, str]) -> dict[str, str]:
 # Tier-1 secrets: stripped from EVERY spawned subprocess unconditionally —
 # even when the caller opts into credential inheritance for a model-driving
 # CLI (claude / codex / gemini).  These are not LLM provider credentials; no
-# legitimate child Hermes spawns needs them, and they are the highest-value
+# legitimate child Norual spawns needs them, and they are the highest-value
 # secrets to keep out of a compromised dependency's reach (gateway bot tokens,
 # GitHub auth, remote-compute tokens, dashboard session secret).  The set is a
 # narrow subset of _HERMES_PROVIDER_ENV_BLOCKLIST; provider keys are handled by
@@ -633,7 +633,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
 
     * **Tier 1 (always):** ``_ALWAYS_STRIP_KEYS`` — gateway bot tokens, GitHub
       auth, and remote-compute secrets are removed regardless of
-      ``inherit_credentials``.  No child Hermes spawns legitimately needs them.
+      ``inherit_credentials``.  No child Norual spawns legitimately needs them.
     * **Tier 2 (conditional):** the rest of ``_HERMES_PROVIDER_ENV_BLOCKLIST``
       (LLM provider API keys, tool secrets) is removed unless the caller passes
       ``inherit_credentials=True``.
@@ -656,7 +656,7 @@ def hermes_subprocess_env(*, inherit_credentials: bool = False) -> dict[str, str
         env.pop(key, None)
     for key in _plugin_terminal_env_strip_keys():
         env.pop(key, None)
-    # Internal routing hints and Hermes-internal dynamic secrets
+    # Internal routing hints and Norual-internal dynamic secrets
     # (``AUXILIARY_<TASK>_API_KEY`` / ``_BASE_URL`` side-LLM credentials,
     # ``GATEWAY_RELAY_*`` relay-auth material) must never reach a child,
     # regardless of ``inherit_credentials`` — a model-driving CLI has no
@@ -715,7 +715,7 @@ def build_subprocess_env(
     function (or :func:`hermes_subprocess_env` for the model-driving-CLI
     surface) instead of copying ``os.environ`` directly, so profile-home
     propagation (``HERMES_HOME`` / subprocess ``HOME`` contract) and the
-    Hermes secret-scrub policy have a single owner.  History: ~11 separate
+    Norual secret-scrub policy have a single owner.  History: ~11 separate
     commits each fixed one more spawn site that missed profile-HOME or
     secret-scrub propagation; this factory is the fix for the class.
 
@@ -737,7 +737,7 @@ def build_subprocess_env(
       scrubbing could change behavior.  The site is still a win: it becomes
       grep-able and future-fixable.
     * ``inherit_profile_home`` — on the non-scrub path, when True, bridge the
-      context-local Hermes home override into ``HERMES_HOME`` and apply the
+      context-local Norual home override into ``HERMES_HOME`` and apply the
       subprocess HOME contract (``hermes_constants.apply_subprocess_home_env``).
       Pass False to keep the inherited env untouched (exact legacy
       ``os.environ.copy()`` behavior).
@@ -847,7 +847,7 @@ def _find_bash() -> str:
         return candidates[0]
 
     raise RuntimeError(
-        "Git Bash not found. Hermes Agent requires Git for Windows on Windows.\n"
+        "Git Bash not found. Norual Agent requires Git for Windows on Windows.\n"
         "Install it from: https://git-scm.com/download/win\n"
         "Or set HERMES_GIT_BASH_PATH to your bash.exe location."
     )
@@ -935,7 +935,7 @@ def _git_bash_aslr_help(bash: str, details: str = "") -> str:
         'Get-Item "$gitRoot\\bin\\bash.exe", "$gitRoot\\usr\\bin\\*.exe" '
         "-ErrorAction SilentlyContinue | ForEach-Object { "
         "Set-ProcessMitigation -Name $_.FullName -Disable ForceRelocateImages }\n"
-        "Then restart Hermes. If the override is blocked or later re-applied, "
+        "Then restart Norual. If the override is blocked or later re-applied, "
         "ask your Windows administrator to allow this per-program exception."
     )
 
@@ -1119,7 +1119,7 @@ def _resolve_hermes_bin_dir() -> str | None:
     agent process's PATH plus a static set of system dirs (``_SANE_PATH``).
     When the gateway is launched by something that does NOT source the user's
     shell rc — systemd, a service manager, a desktop launcher, cron — the
-    hermes install dir (``~/.local/bin``, the venv ``bin``/``Scripts``, pipx,
+    norual install dir (``~/.local/bin``, the venv ``bin``/``Scripts``, pipx,
     nix) is absent from that PATH, so plugins shelling out to bare ``hermes``
     via the terminal tool hit ``command not found`` (exit 127) even though
     ``hermes`` works fine in the user's own interactive terminal.
@@ -1170,7 +1170,7 @@ def _resolve_hermes_bin_dir() -> str | None:
 
 
 def _prepend_hermes_bin_dir(existing_path: str) -> str:
-    """Prepend the hermes install dir to ``existing_path`` if it's missing.
+    """Prepend the norual install dir to ``existing_path`` if it's missing.
 
     Cross-platform (uses ``os.pathsep``). First-occurrence wins, so a PATH
     that already contains the dir is returned unchanged. Returns the input
@@ -1187,11 +1187,11 @@ def _prepend_hermes_bin_dir(existing_path: str) -> str:
 
 
 def _managed_runtime_path_entries() -> list[str]:
-    """Return existing Hermes-managed runtime dirs for the terminal subshell PATH.
+    """Return existing Norual-managed runtime dirs for the terminal subshell PATH.
 
     The terminal tool spawns a subshell whose PATH is the agent process's PATH
-    plus ``_SANE_PATH``. Neither carries the runtimes Hermes installs for
-    itself, so on a machine where Hermes provisioned its own toolchain a
+    plus ``_SANE_PATH``. Neither carries the runtimes Norual installs for
+    itself, so on a machine where Norual provisioned its own toolchain a
     command the agent runs resolves a system copy instead — or nothing at all:
 
     - ``$HERMES_HOME/node`` (+ ``/bin``) — installed to satisfy the desktop and
@@ -1231,7 +1231,7 @@ def _append_missing_sane_path_entries(existing_path: str) -> str:
     - **Duplicates are collapsed** (first occurrence wins), so a caller PATH
       that already contains repeats is not propagated verbatim.
 
-    Hermes-managed runtime dirs are appended alongside the sane entries, not
+    Norual-managed runtime dirs are appended alongside the sane entries, not
     prepended: a tool the user deliberately put on their own PATH still wins,
     and the managed one only fills the gap where there would otherwise be
     nothing.
@@ -1275,7 +1275,7 @@ def _apply_windows_msys_bash_env_defaults(env: dict) -> None:
 
     Git Bash rewrites arguments that look like Unix paths (``/FO``, ``/TN``,
     ``/Create``) into ``C:/.../git/FO``-style paths, which breaks native
-    Windows commands such as ``tasklist``, ``schtasks``, and ``wmic``.  Hermes
+    Windows commands such as ``tasklist``, ``schtasks``, and ``wmic``.  Norual
     runs terminal commands through bash on Windows, so set the standard MSYS
     opt-out by default.  Users who need conversion can override in their env.
     Refs #56700.
@@ -1349,7 +1349,7 @@ def _make_run_env(env: dict) -> dict:
         # error / exit 127).  No-op off Windows and when a login snapshot is
         # healthy (the snapshot re-exports the full PATH inside the shell).
         new_path = _prepend_git_bash_dirs(new_path)
-        # Ensure the hermes install dir is reachable so plugins can shell out
+        # Ensure the norual install dir is reachable so plugins can shell out
         # to bare ``hermes`` via the terminal tool even when the gateway was
         # launched without it on PATH (systemd, service managers, cron, etc.).
         run_env[path_key] = _prepend_hermes_bin_dir(new_path)
@@ -1385,12 +1385,12 @@ def _build_hermes_repo_root_aliases(
     lexical_root: Path,
     configured_home: Path,
 ) -> tuple[Path, ...]:
-    """Return exact repo-root spellings emitted by Hermes launchers.
+    """Return exact repo-root spellings emitted by Norual launchers.
 
     ``gateway_windows._preserve_hermes_home_path`` maps a physical path under
     the resolved HERMES_HOME back onto the configured HERMES_HOME spelling.
     Mirror that producer contract here so a junction-backed install is matched
-    without treating arbitrary descendants of HERMES_HOME as Hermes-owned.
+    without treating arbitrary descendants of HERMES_HOME as Norual-owned.
     Additionally, when the repo itself is a junction under the configured root
     (repo-level junction, possibly cross-drive), the single deterministic
     candidate <root>/<repo dirname> is accepted only when strict resolve
@@ -1435,7 +1435,7 @@ def _build_hermes_repo_root_aliases(
     # cannot express a cross-drive link (commonpath raises on different
     # drives), so prove the EXACT filesystem identity of the single
     # deterministic candidate -- <lexical root>/<repo dirname> -- with a
-    # strict resolve before accepting it as Hermes-owned.  Fail-closed: a
+    # strict resolve before accepting it as Norual-owned.  Fail-closed: a
     # missing path (strict resolve raises), a real directory that is not the
     # known physical root, or any unrelated spelling never becomes an alias.
     for home in home_candidates:
@@ -1449,19 +1449,19 @@ def _build_hermes_repo_root_aliases(
     return tuple(aliases)
 
 
-# --- Hermes venv / repo-root detection (module-level, computed once) ---
+# --- Norual venv / repo-root detection (module-level, computed once) ---
 
-#: The Hermes repository root - three levels up from this file
+#: The Norual repository root - three levels up from this file
 #: (``tools/environments/local.py`` -> ``tools/environments`` -> ``tools``
 #: -> repo root).  This is the directory the Electron app prepends to
 #: PYTHONPATH so the backend can do ``import tools``, ``import hermes_cli``,
-#: etc.  Subprocesses that are NOT the Hermes backend don't need it and it
+#: etc.  Subprocesses that are NOT the Norual backend don't need it and it
 #: can shadow local packages.
 _hermes_repo_root: Path = Path(__file__).resolve().parents[2]
 
-#: Alternate spellings of the repo root that Hermes launchers may emit.
+#: Alternate spellings of the repo root that Norual launchers may emit.
 #: ``Path(__file__).resolve()`` canonicalizes symlinks/junctions, but the
-#: Windows gateway launcher deliberately renders Hermes-owned paths under
+#: Windows gateway launcher deliberately renders Norual-owned paths under
 #: the configured HERMES_HOME spelling (which may be a junction to another
 #: drive — see ``hermes_cli/gateway_windows.py::_preserve_hermes_home_path``).
 #: ``Path(__file__)`` (unresolved) keeps that spelling, so a PYTHONPATH
@@ -1493,7 +1493,7 @@ def _validated_runtime_venv(env: dict) -> Path | None:
 
     A user may carry an unrelated VIRTUAL_ENV, so the variable alone is not
     provenance.  The legacy Windows base-Python gateway producer uses the exact
-    ``<Hermes repo>/venv`` layout and a real venv marker; require both before
+    ``<Norual repo>/venv`` layout and a real venv marker; require both before
     accepting its separate runtime venv.
     """
     value = env.get("VIRTUAL_ENV")
@@ -1514,7 +1514,7 @@ def _validated_runtime_venv(env: dict) -> Path | None:
 
 
 def _get_hermes_site_packages(env: dict) -> list[Path]:
-    """Return exact site-packages dirs owned by the Hermes runtime.
+    """Return exact site-packages dirs owned by the Norual runtime.
 
     Uses ``site.getsitepackages()`` when available for robustness (it respects
     ``.pth`` rewrites and platform conventions), with a manual fallback that
@@ -1558,7 +1558,7 @@ def _get_hermes_site_packages(env: dict) -> list[Path]:
 
 
 def _strip_hermes_owned_pythonpath_and_runtime_markers(env: dict) -> None:
-    """Strip Hermes-owned PYTHONPATH entries, then the runtime marker vars.
+    """Strip Norual-owned PYTHONPATH entries, then the runtime marker vars.
 
     Ordering is load-bearing: PYTHONPATH filtering must run BEFORE the
     markers are removed so a validated Windows base-interpreter launch
@@ -1570,14 +1570,14 @@ def _strip_hermes_owned_pythonpath_and_runtime_markers(env: dict) -> None:
 
 
 def _strip_hermes_owned_pythonpath(env: dict) -> None:
-    """Remove Hermes-owned PYTHONPATH entries from subprocess environments.
+    """Remove Norual-owned PYTHONPATH entries from subprocess environments.
 
-    Launchers prepend the Hermes repo root and the Hermes venv's
+    Launchers prepend the Norual repo root and the Norual venv's
     site-packages so the backend can ``import tools``; leaking those into a
     child Python of a DIFFERENT version makes it load the backend's C
     extensions and crash (``numpy._core._multiarray_umath``, ``PIL._imaging``,
     ``cryptography``).  Blanket-removing PYTHONPATH would discard legitimate
-    user entries, so only entries proven Hermes-owned are removed:
+    user entries, so only entries proven Norual-owned are removed:
 
     1. The exact repo root (never direct children -- no launcher injects
        one, and user paths under the repo must survive).
@@ -1602,7 +1602,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
     for entry in pp.split(os.pathsep):
         # Empty and non-normalized components are user-owned semantics.  In
         # particular, an empty component means the current working directory.
-        # Preserve raw spelling unless the exact component is Hermes-owned.
+        # Preserve raw spelling unless the exact component is Norual-owned.
         if entry == "":
             kept.append(entry)
             continue
@@ -1610,7 +1610,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
         entry_path = Path(entry)
         should_strip = False
 
-        # --- Check 1: Hermes venv site-packages ---
+        # --- Check 1: Norual venv site-packages ---
         # Producers inject the exact directory, never a descendant.  Exact
         # matching avoids deleting a user path nested below site-packages.
         for sp in hermes_site_packages:
@@ -1621,7 +1621,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
             stripped.append(entry)
             continue
 
-        # --- Check 2: Hermes repo root ---
+        # --- Check 2: Norual repo root ---
         # The Electron app prepends the repo root so ``import tools`` works
         # in the backend.  Subprocesses don't need it and it can shadow
         # local packages of the same name.  Only the EXACT root is stripped:
@@ -1629,7 +1629,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
         # independent PYTHONPATH entry, and user paths that merely happen to
         # live under the repo directory must be preserved.  Both the
         # resolved and unresolved (HERMES_HOME/junction) spellings count as
-        # Hermes-owned.
+        # Norual-owned.
         if not should_strip:
             should_strip = any(
                 _same_path(entry_path, repo_root)
@@ -1648,7 +1648,7 @@ def _strip_hermes_owned_pythonpath(env: dict) -> None:
 
     if stripped:
         logger.debug(
-            "Stripped Hermes-owned entries from PYTHONPATH: %s",
+            "Stripped Norual-owned entries from PYTHONPATH: %s",
             stripped,
         )
 
@@ -1679,7 +1679,7 @@ def _resolve_shell_init_files() -> list[str]:
     Expands ``~`` and ``${VAR}`` references and drops anything that doesn't
     exist on disk, so a missing ``~/.bashrc`` never breaks the snapshot.
     The ``auto_source_bashrc`` path runs only when the user hasn't supplied
-    an explicit list — once they have, Hermes trusts them.
+    an explicit list — once they have, Norual trusts them.
     """
     explicit, auto_bashrc = _read_terminal_shell_init_config()
 

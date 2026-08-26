@@ -44,7 +44,7 @@ def test_mechanism_ids_are_machine_readable_and_described():
     assert "systemctl" in describe_restart_mechanism("systemd", "default")
     assert "kickstart" in describe_restart_mechanism("launchd", "work")
     assert "-p work" in describe_restart_mechanism("manual", "work")
-    assert describe_restart_mechanism("manual", "default") == "hermes gateway restart"
+    assert describe_restart_mechanism("manual", "default") == "norual gateway restart"
 
 
 def test_relaunched_profile_is_restarted():
@@ -101,7 +101,7 @@ def test_untouched_runtime_is_unaccounted_and_escalates(capsys):
     out = capsys.readouterr().out
     assert "never touched" in out
     assert "coder" in out and "500" in out
-    assert "hermes -p <profile> gateway restart" in out
+    assert "norual -p <profile> gateway restart" in out
 
 
 def test_external_supervisor_counts_as_restarted():

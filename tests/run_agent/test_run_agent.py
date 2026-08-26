@@ -541,7 +541,7 @@ class TestSessionJsonSnapshotOptIn:
 
     def test_traversal_session_id_cannot_escape_logs_dir(self, agent, tmp_path):
         # Security regression (#5958): a traversal-shaped session ID (which can
-        # originate from the untrusted X-Hermes-Session-Id API header) must not
+        # originate from the untrusted X-Norual-Session-Id API header) must not
         # redirect the session snapshot outside the sessions directory.
         agent._session_json_enabled = True
         agent.logs_dir = tmp_path
@@ -2371,7 +2371,7 @@ class TestConcurrentToolExecution:
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
         assert duplicate_errors == [
-            "Hermes tool execution callback invoked more than once"
+            "Norual tool execution callback invoked more than once"
         ]
         assert outcome.blocked is False
 
@@ -2433,7 +2433,7 @@ class TestConcurrentToolExecution:
 
         assert outcome.result == "ok"
         assert dispatched == [{"command": "true"}]
-        assert errors == ["Hermes tool execution callback invoked more than once"]
+        assert errors == ["Norual tool execution callback invoked more than once"]
         assert outcome.blocked is False
 
 
@@ -3165,7 +3165,7 @@ class TestRunConversation:
         assert "Ollama loaded `qwen3.5:9b` with only 4,096 tokens" in result["final_response"]
         assert "model.ollama_num_ctx: 65536" in result["final_response"]
         assert not agent.client.chat.completions.create.called
-        assert "Ollama runtime context too small for Hermes tool use" in caplog.text
+        assert "Ollama runtime context too small for Norual tool use" in caplog.text
         assert "runtime_context=4096" in caplog.text
 
     def test_tool_calls_then_stop(self, agent):

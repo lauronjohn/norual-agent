@@ -1,4 +1,4 @@
-"""``hermes update`` subcommand parser.
+"""``norual update`` subcommand parser.
 
 Extracted verbatim from ``hermes_cli/main.py:main()`` (god-file Phase 2).
 Handler injected to avoid importing ``main``.
@@ -37,7 +37,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         default=False,
         help=(
             "Show the update plan and exit without changing anything: install "
-            "kind (git/docker/nix), every running Hermes service across all "
+            "kind (git/docker/nix), every running Norual service across all "
             "profiles with its supervisor and running code version, and how "
             "each will be restarted. Read-only; safe on a live fleet."
         ),
@@ -59,7 +59,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         "-y",
         action="store_true",
         default=False,
-        help="Assume yes for interactive prompts (config migration, stash restore). API-key entry is skipped; run 'hermes config migrate' separately for those.",
+        help="Assume yes for interactive prompts (config migration, stash restore). API-key entry is skipped; run 'norual config migrate' separately for those.",
     )
     update_parser.add_argument(
         "--keep-stash",
@@ -79,7 +79,7 @@ def build_update_parser(subparsers, *, cmd_update: Callable) -> None:
         metavar="NAME",
         help=(
             "Update against this branch instead of the default (main). "
-            "If the local checkout is on a different branch, hermes will "
+            "If the local checkout is on a different branch, norual will "
             "switch to the requested branch first (auto-stashing any "
             "uncommitted changes)."
         ),

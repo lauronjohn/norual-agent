@@ -126,3 +126,36 @@ removing it would break skills and upstream merge hygiene.
 | Binary name | wrapper script `norual-agent`/`nra` → hermes entrypoint | ✅ done (pyproject scripts) |
 | Version label | banner.py / _startup_fast.py / cli.py strings | ✅ done |
 | Internal module names | intentionally NOT renamed (upstream merge hygiene) | N/A |
+
+## Full repo rebrand (uncommitted at pause; commit next session)
+
+Full "Hermes → Norual" sweep across all user-facing surfaces — see the git
+diff on the `norual` branch. Highlights:
+
+- **Package**: `pyproject.toml` name → `norual-agent`; description/author
+- **Word sweep** (`Hermes Agent`→`Norual Agent`, `\bHermes\b`→`Norual`,
+  `\bhermes `→`norual `): cli.py, run_agent.py, hermes_cli/** (incl.
+  subdirs), tools/** , agent/** (incl. transports), cron, gateway,
+  plugins/**, tui_gateway, skills/**, optional-skills/**
+- **Identifiers**: `HermesCLI`→`NorualCLI` + 14 `Hermes*` class names
+  (TokenStorage, ConsoleEngine, Overlay, ACPAgent, Step, MCPOAuthProvider,
+  SetupBot, OAuthClientProvider, IndexSource, SweEnv, PRDelegationSession
+  Context, MeetSink, DebugBoundary, Dashboard)
+- **Headers/UA**: X-Title, User-Agent (`NorualAgent/...`),
+  X-BILLING-INVOKE-ORIGIN, codex client identity, webhook `X-Norual-*`
+- **Kept (necessary)**: `hermes` console scripts, `HERMES_HOME`,
+  `hermes-*` module names, `hermes-gateway` unit names, Nous Hermes 3/4
+  model names, upstream docs URL, "hey hermes" wake word, `HermesBot`/
+  `HermesGateway` platform names
+- **Guard fixes**: `cron/lifecycle_guard.py` regexes match `(hermes|norual)`;
+  `_hermes_holder_subcommand` recognizes `norual`/`norual-agent`/`nra`;
+  profile wrappers invoke `norual`; session export files
+  `norual_conversation_*.json`
+- **Test suite**: expectations updated (~200 asserts)
+- **Side-gutter feature removed** (stray working-tree artifact from a stash
+  mishap; existed in no commit — flush-left streaming contract restored)
+
+Verification status at pause: agent + cli suites FULLY GREEN (only known
+pre-existing: `test_stream_partial_line_flush`); hermes_cli/tools/run_agent/
+plugins/skills: all previously-failing files green except the pristine
+baseline set; FINAL full 7-suite pass still pending.

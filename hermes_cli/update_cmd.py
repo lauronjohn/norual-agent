@@ -4377,7 +4377,10 @@ def _hermes_holder_subcommand(cmdline: str) -> str | None:
             entry_idx = i
             break
         base = low.rsplit("\\", 1)[-1].rsplit("/", 1)[-1]
-        if base in ("hermes", "hermes.exe"):
+        # norual fork: recognize the fork binaries as holder entry tokens
+        # alongside the legacy norual shim.
+        if base in ("hermes", "hermes.exe", "norual", "norual.exe",
+                    "norual-agent", "norual-agent.exe", "nra", "nra.exe"):
             entry_idx = i
             break
     if entry_idx is None:

@@ -1,7 +1,7 @@
 """Modal cloud execution environment using the native Modal SDK directly.
 
 Uses ``Sandbox.create()`` + ``Sandbox.exec()`` instead of the older runtime
-wrapper, while preserving Hermes' persistent snapshot behavior across sessions.
+wrapper, while preserving Norual' persistent snapshot behavior across sessions.
 """
 
 import asyncio
@@ -369,7 +369,7 @@ class ModalEnvironment(BaseEnvironment):
     def _modal_bulk_download(self, dest: Path) -> None:
         """Download remote .hermes/ as a tar archive.
 
-        Modal sandboxes always run as root, so /root/.hermes is hardcoded
+        Modal sandboxes always run as root, so /root/.norual is hardcoded
         (consistent with iter_sync_files call on line 269).
         """
         async def _download():
