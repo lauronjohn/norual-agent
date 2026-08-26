@@ -10989,7 +10989,17 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             "filter": "",
         }
         if start_at_model and providers:
-            provider_data = providers[0]
+            # Jump straight to the CURRENT provider's models; the full
+            # providers list stays in state so the picker's provider stage
+            # (Back) still lists every configured provider.
+            cur_slug = state.get("current_provider") or ""
+            provider_data = next(
+                (
+                    p for p in providers
+                    if p.get("is_current") or (p.get("slug") or "") == cur_slug
+                ),
+                providers[0],
+            )
             model_list = provider_data.get("models", [])
             if not model_list:
                 try:
@@ -11518,6 +11528,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                     raise RuntimeError("inventory context unavailable")
                 providers = build_models_payload(
                     ctx,
+                    # norual fork: show only providers the user actually
+                    # configured (key present / in config), not ambient or
+                    # auto-seeded rows.
+                    explicit_only=True,
                     probe_custom_providers=force_refresh,
                     probe_current_custom_provider=not force_refresh,
                 )["providers"]
@@ -11534,34 +11548,16 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
                 _cprint("  /model --refresh                     re-fetch live model lists")
                 return
 
-            # norual fork: /model with no args shows ONLY the current
-            # provider's models, skipping the provider stage of the picker.
-            _cur_slug = (
-                self.provider
-                or (ctx.current_provider if ctx is not None else "")
-                or ""
-            )
-            _current_provider_rows = [
-                p for p in providers
-                if p.get("is_current") or (p.get("slug") or "") == _cur_slug
-            ]
-            if _current_provider_rows:
-                self._open_model_picker(
-                    _current_provider_rows,
-                    model_display,
-                    provider_display,
-                    user_provs=user_provs,
-                    custom_provs=custom_provs,
-                    start_at_model=True,
-                )
-                return
-
+            # norual fork: /model with no args opens directly on the CURRENT
+            # provider's models, but the picker's provider stage (Back) keeps
+            # every configured provider so switching stays one step away.
             self._open_model_picker(
                 providers,
                 model_display,
                 provider_display,
                 user_provs=user_provs,
                 custom_provs=custom_provs,
+                start_at_model=True,
             )
             return
 
