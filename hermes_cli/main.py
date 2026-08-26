@@ -5809,6 +5809,13 @@ def cmd_kanban(args):
     return kanban_command(args)
 
 
+def cmd_provider(args):
+    """Pick a provider and save its API key (norual fork)."""
+    from hermes_cli.provider_cmd import provider_command
+
+    return provider_command(args)
+
+
 def cmd_project(args):
     """Manage projects (named, multi-folder workspaces)."""
     from hermes_cli.projects_cmd import projects_command
@@ -12334,7 +12341,7 @@ _BUILTIN_SUBCOMMANDS = frozenset(
         "gui", "desktop", "kanban", "login", "logout", "logs", "lsp", "mcp", "memory", "migrate", "moa",
         "journey", "memory-graph", "learning",
         "model", "monitoring", "pairing", "pause", "peer", "pets", "plugins", "portal", "profile",
-        "project", "proxy",
+        "project", "provider", "proxy",
         "prompt-size",
         "resume",
         "send", "sessions", "setup",
@@ -13465,6 +13472,14 @@ def main():
 
     kanban_parser = _build_kanban_parser(subparsers)
     kanban_parser.set_defaults(func=cmd_kanban)
+
+    # =========================================================================
+    # provider command — pick a provider, save its API key (norual fork)
+    # =========================================================================
+    from hermes_cli.provider_cmd import build_parser as _build_provider_parser
+
+    provider_parser = _build_provider_parser(subparsers)
+    provider_parser.set_defaults(func=cmd_provider)
 
     # =========================================================================
     # project command — named, multi-folder workspaces
