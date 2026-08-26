@@ -11809,6 +11809,14 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         if len(tokens) > 1 and not tokens[1].startswith("-"):
             provider_id = tokens[1]
 
+        if provider_id and "--remove" in tokens:
+            from hermes_cli.provider_cmd import _remove_flow
+
+            rc = _remove_flow(provider_id)
+            if rc:
+                self._console_print(f"[dim]provider exited with code {rc}[/dim]")
+            return
+
         try:
             rc = provider_command(
                 argparse.Namespace(provider_id=provider_id, provider_list=False),

@@ -166,6 +166,7 @@ def _interactive_flow(pid: str, *, key_callback=None, ask_default: bool = True) 
         var = cfg.api_key_env_vars[0]
         if os.getenv(var) or _env_value(var):
             print(f"  {cfg.name} is already configured — keeping the existing key.")
+            print(f"  (remove it anytime with: norual provider --remove {pid})")
         else:
             key = _prompt_api_key(cfg)
             if key is None:
@@ -192,6 +193,52 @@ def _interactive_flow(pid: str, *, key_callback=None, ask_default: bool = True) 
     return 0
 
 
+def _remove_flow(pid: str) -> int:
+    """Remove a provider's credentials (API key) and config entries.
+
+    Deleting the key is what makes the provider disappear from the picker
+    (providers are "available" when they have credentials or a config entry).
+    """
+    cfg = _resolve_provider_config(pid)
+    if cfg is None:
+        print(f"✗ unknown provider '{pid}'. Run `norual provider --list` to see the available ones.",
+              file=sys.stderr)
+        return 1
+
+    from hermes_cli.config import remove_env_value, unset_config_value
+
+    removed_any = False
+    env_vars = tuple(getattr(cfg, "api_key_env_vars", ()) or ())
+    base_var = getattr(cfg, "base_url_env_var", "") or ""
+    for var in env_vars + ((base_var,) if base_var else ()):
+        if not (os.getenv(var) or _env_value(var)):
+            continue
+        try:
+            if remove_env_value(var):
+                print(f"✓ removed {var} from .env")
+                removed_any = True
+        except Exception as e:
+            print(f"✗ could not remove {var}: {e}", file=sys.stderr)
+
+    # Drop any config providers.<id> entry (custom endpoints etc.) — only
+    # when it actually exists, so removal doesn't print noise for the
+    # common case (API-key-only provider with no config section).
+    try:
+        from hermes_cli.config import load_config_readonly, unset_config_value
+
+        if (load_config_readonly().get("providers") or {}).get(pid):
+            unset_config_value(f"providers.{pid}")
+    except Exception:
+        pass
+
+    if not removed_any:
+        print(f"  {pid}: no credentials found — nothing to remove.")
+        return 0
+    print(f"\n  {pid} removed. If it was your active provider, switch with "
+          f"`/model --provider <other>` first.")
+    return 0
+
+
 def _list_flow() -> int:
     providers = _api_key_providers()
     if not providers:
@@ -213,6 +260,13 @@ def provider_command(args, *, key_callback=None, ask_default: bool = True) -> in
     """
     if getattr(args, "provider_list", False):
         return _list_flow()
+
+    if getattr(args, "provider_remove", False):
+        if not getattr(args, "provider_id", None):
+            print("✗ --remove requires a provider id: `norual provider --remove <id>`",
+                  file=sys.stderr)
+            return 1
+        return _remove_flow(args.provider_id)
 
     if getattr(args, "provider_id", None):
         return _interactive_flow(
@@ -274,5 +328,11 @@ def build_parser(subparsers):
         action="store_true",
         dest="provider_list",
         help="List all API-key providers and their configuration status",
+    )
+    parser.add_argument(
+        "--remove",
+        action="store_true",
+        dest="provider_remove",
+        help="Remove a provider's API key (and config entry) by id",
     )
     return parser
