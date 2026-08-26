@@ -1274,6 +1274,8 @@ def build_welcome_banner(console: "Console", model: str, cwd: str,
     except Exception:
         _logo_width = 0
     if _logo_width and term_width >= min(95, _logo_width + 8):
-        console.print(_logo)
+        # norual fork: center the logo so it balances the centered panel
+        # below instead of hugging the left edge.
+        console.print(_logo, justify="center")
         console.print()
     console.print(outer_panel)

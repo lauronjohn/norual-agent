@@ -2964,6 +2964,50 @@ _STREAM_PARTIAL_PREVIEW_LEN = 60  # tail of an unfinished logical line mirrored
 # into the spinner while streaming (TTFT perception without hard-wrapping)
 
 
+def _wrap_stream_line(line: str, width: int) -> list:
+    """Word-wrap a plain-text line to *width* visible terminal columns.
+
+    norual fork: the streaming response/reasoning boxes draw border rules at
+    the terminal width but emit raw lines, so long paragraphs soft-wrapped by
+    the terminal ran past the right border (jagged, "not line to line") and
+    unbroken tokens could get cut off entirely. This wraps at word boundaries
+    to the box's inner width and hard-slices any token still longer than the
+    width, so every line fits neatly inside the box. Table rows are realigned
+    separately and never pass through here.
+    """
+    if not line:
+        return [line]
+    if HermesCLI._status_bar_display_width(line) <= width:
+        return [line]
+    words = line.split(" ")
+    wrapped: list = []
+    current = ""
+    for word in words:
+        if not current:
+            current = word
+            continue
+        if (
+            HermesCLI._status_bar_display_width(current)
+            + 1
+            + HermesCLI._status_bar_display_width(word)
+            <= width
+        ):
+            current = f"{current} {word}"
+            continue
+        wrapped.append(current)
+        current = word
+    if current:
+        wrapped.append(current)
+    # Hard-slice any unbroken token longer than the box width.
+    final: list = []
+    for chunk in wrapped:
+        while HermesCLI._status_bar_display_width(chunk) > width:
+            final.append(chunk[:width])
+            chunk = chunk[width:]
+        final.append(chunk)
+    return final
+
+
 def _hex_to_ansi(hex_color: str, *, bold: bool = False) -> str:
     """Convert a hex color like '#268bd2' to a true-color ANSI escape.
 
@@ -7715,11 +7759,14 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Emit complete lines, and force-flush long partial lines so
         # reasoning is visible in real-time even without newlines.
+        _rw = self._scrollback_box_width()
         while "\n" in self._reasoning_buf:
             line, self._reasoning_buf = self._reasoning_buf.split("\n", 1)
-            _cprint(f"{_DIM}{line}{_RST}")
+            for _wrapped in _wrap_stream_line(line, _rw - 2):
+                _cprint(f"{_DIM}{_wrapped}{_RST}")
         if len(self._reasoning_buf) > 80:
-            _cprint(f"{_DIM}{self._reasoning_buf}{_RST}")
+            for _wrapped in _wrap_stream_line(self._reasoning_buf, _rw - 2):
+                _cprint(f"{_DIM}{_wrapped}{_RST}")
             self._reasoning_buf = ""
 
     def _close_reasoning_box(self) -> None:
@@ -7728,7 +7775,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             # Flush remaining reasoning buffer
             buf = getattr(self, "_reasoning_buf", "")
             if buf:
-                _cprint(f"{_DIM}{buf}{_RST}")
+                w = self._scrollback_box_width()
+                for _wrapped in _wrap_stream_line(buf, w - 2):
+                    _cprint(f"{_DIM}{_wrapped}{_RST}")
                 self._reasoning_buf = ""
             w = self._scrollback_box_width()
             _cprint(f"{_DIM}└{'─' * (w - 2)}┘{_RST}")
@@ -7935,6 +7984,7 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         # Emit complete lines, keep partial remainder in buffer
         _tc = getattr(self, "_stream_text_ansi", "")
+        _box_w = self._scrollback_box_width()
 
         def _emit_one(printed_line: str) -> None:
             _cprint(f"{_STREAM_PAD}{_tc}{printed_line}{_RST}" if _tc else f"{_STREAM_PAD}{printed_line}")
@@ -7979,7 +8029,10 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
             if self.final_response_markdown == "strip":
                 line = _strip_markdown_syntax(line)
-            _emit_one(line)
+            # norual fork: wrap to the box's inner width so long paragraphs
+            # stay inside the border instead of soft-wrapping past it.
+            for _wrapped in _wrap_stream_line(line, _box_w - 2):
+                _emit_one(_wrapped)
 
         # Long partial lines are emitted ONLY at real newlines — we no
         # longer hard-wrap paragraphs at terminal width ourselves.  Each
@@ -8052,7 +8105,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
         if self._stream_buf:
             line = _strip_markdown_syntax(self._stream_buf) if self.final_response_markdown == "strip" else self._stream_buf
-            _cprint(f"{_STREAM_PAD}{_tc}{line}{_RST}" if _tc else f"{_STREAM_PAD}{line}")
+            # norual fork: wrap the trailing partial line to the box width too.
+            for _wrapped in _wrap_stream_line(line, w - 2):
+                _cprint(f"{_STREAM_PAD}{_tc}{_wrapped}{_RST}" if _tc else f"{_STREAM_PAD}{_wrapped}")
             self._stream_buf = ""
 
         # Close the response box
