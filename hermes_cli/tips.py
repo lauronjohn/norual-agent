@@ -506,6 +506,13 @@ COMPOSER_PLACEHOLDERS = [
     "Type / to browse commands, or Ctrl+P for the palette",
 ]
 
+# norual-agent fork: placeholders that are NAVIGATIONAL instructions rather
+# than task prompts. They still render as hints, but Tab (which inserts the
+# composer placeholder into an empty input) must NOT paste these.
+NON_INSERTABLE_COMPOSER_PLACEHOLDERS = frozenset({
+    "Type / to browse commands, or Ctrl+P for the palette",
+})
+
 
 def get_random_composer_placeholder() -> str:
     """Return a rotating task-oriented placeholder for the empty composer."""

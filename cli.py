@@ -18336,8 +18336,14 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             if not buf.text:
                 placeholder = getattr(cli_ref, "_composer_placeholder", "") or ""
                 if placeholder:
-                    buf.insert_text(placeholder)
-                    return
+                    try:
+                        from hermes_cli.tips import NON_INSERTABLE_COMPOSER_PLACEHOLDERS
+                        _insertable = placeholder not in NON_INSERTABLE_COMPOSER_PLACEHOLDERS
+                    except Exception:
+                        _insertable = True
+                    if _insertable:
+                        buf.insert_text(placeholder)
+                        return
             if buf.suggestion and buf.suggestion.text:
                 # Ghost text auto-suggestion — accept it first.
                 buf.insert_text(buf.suggestion.text)
