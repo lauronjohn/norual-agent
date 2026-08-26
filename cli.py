@@ -6994,7 +6994,11 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
 
     # Pulsing thunderbolt: brightness ramp for the bolt glyph (skin accent).
     _BOLT_PULSE_FACTORS = (0.4, 0.6, 0.8, 1.0, 0.8, 0.6)
-    _BOLT_GLYPH = "\u26a1\ufe0e"  # ⚡ + text-presentation selector (colored, not emoji)
+    # U+03DF Greek koppa — a text glyph that renders as a lightning bolt:
+    # always single-cell width and always takes ANSI color (unlike U+26A1 ⚡,
+    # which many terminals render as a fixed-yellow 2-cell emoji, leaving a
+    # gap next to it).
+    _BOLT_GLYPH = "\u03df"
 
     def _bolt_hex_color(self) -> str:
         """Return the current bolt pulse color as a hex string.
