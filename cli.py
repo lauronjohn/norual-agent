@@ -6652,9 +6652,9 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         width = width or self._get_tui_terminal_width()
         if width and width > 10:
             import math
-            # norual fork: account for the bolt fragment (2 spaces + bolt +
-            # 1 space) added by the spinner widget.
-            text_width = self._status_bar_display_width(spinner_line) + 4
+            # norual fork: account for the bolt fragment (bolt + 1 space)
+            # added by the spinner widget.
+            text_width = self._status_bar_display_width(spinner_line) + 2
             return max(1, math.ceil(text_width / width))
         return 1
 
@@ -19720,7 +19720,6 @@ class HermesCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
             # color per frame) so it renders as a colored bolt, not escape text.
             bolt_color = cli_ref._bolt_hex_color()
             return [
-                ('class:hint', '  '),
                 (f'class:hint {bolt_color}', cli_ref._BOLT_GLYPH),
                 ('class:hint', f' {spinner_line}'),
             ]
