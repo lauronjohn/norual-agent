@@ -23,3 +23,27 @@ security:
   approvals:
     # General conversation rarely hits shell commands; keep prompts on.
     mode: manual
+
+# ── Assistant flavor ──────────────────────────────────────────────────────────
+
+memory:
+  memory_enabled: true      # persistent MEMORY.md / USER.md across sessions
+  user_profile_enabled: true
+  write_approval: false     # let memory write freely; review via /memory
+
+curator:
+  enabled: true             # periodic skill-lifecycle maintenance
+  consolidate: false        # no LLM umbrella-building (keeps aux cost at zero)
+
+auxiliary:
+  # Route background/side LLM work to a cheap flash model so the chat model
+  # stays reserved for conversation.
+  title_generation:
+    provider: openrouter
+    model: google/gemini-3-flash-preview
+  background_review:
+    provider: openrouter
+    model: google/gemini-3-flash-preview
+  curator:
+    provider: openrouter
+    model: google/gemini-3-flash-preview

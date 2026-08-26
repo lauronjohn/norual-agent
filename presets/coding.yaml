@@ -38,3 +38,25 @@ security:
       ESCALATE: destructive commands (rm -rf, dd, mkfs, chmod -R,
       git push --force), writes outside the current project directory, and
       anything that modifies system state.
+
+# ── Assistant flavor (memory + cheap aux model routing) ───────────────────────
+
+memory:
+  memory_enabled: true
+  user_profile_enabled: true
+  write_approval: false
+
+curator:
+  enabled: true
+  consolidate: false
+
+auxiliary:
+  title_generation:
+    provider: openrouter
+    model: google/gemini-3-flash-preview
+  background_review:
+    provider: openrouter
+    model: google/gemini-3-flash-preview
+  curator:
+    provider: openrouter
+    model: google/gemini-3-flash-preview

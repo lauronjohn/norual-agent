@@ -57,10 +57,27 @@ auto`) with a senior-engineer brief; LSP subsystem is on by default
 (`agent.lsp.enabled: true`, on-demand servers, auto-install into HERMES_HOME);
 approvals default to `smart` with a custom `smart_policy` hook.
 
+### Phase 3 — assistant flavor (complete)
+
+Config-level only (no code changes):
+
+- `~/.norual/config.yaml` — `memory.*` on (free writes, review via `/memory`),
+  `curator.enabled: true` + `consolidate: false` (deterministic maintenance only,
+  zero aux cost), `auxiliary.{title_generation,background_review,curator}` routed
+  to a cheap OpenRouter flash model (`google/gemini-3-flash-preview`) so
+  background LLM work never burns the chat model's budget.
+- `presets/coding.yaml` + `presets/chat.yaml` — same assistant block added to
+  both presets.
+
+Assessment (no change needed): memory/curator/skills/session-search all ship
+enabled with sane defaults; bundled skills are available by default
+(`hermes skills` to browse; `hermes skills install official/<cat>/<skill>` for
+optional-skills); FTS5 session search is built into `state.db`; cron automations
+exist via `hermes cron` / the `cronjob` tool — none created (user preference).
+
 ### User state (outside repo)
-- `~/.norual/config.yaml` — now also: `agent.coding_context: auto`,
-  `agent.coding_instructions` (personal brief), `security.approvals.mode: smart`
-  + `smart_policy` (approve read-only, escalate destructive)
+- `~/.norual/config.yaml` — Phase 3 additions: `memory`, `curator`, `auxiliary`
+  cheap-model routing (see above)
 
 ## Rebrand inventory (Phase 1 targets)
 
