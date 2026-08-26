@@ -1,5 +1,5 @@
 """
-Hermes Plugin System
+Norual Plugin System
 ====================
 
 Discovers, loads, and manages plugins from four sources:
@@ -129,7 +129,7 @@ def _install_plugin_debug_handler(force: bool = False) -> None:
     """When HERMES_PLUGINS_DEBUG is on, tee plugin logs to stderr at DEBUG.
 
     Idempotent: only attaches the handler once per process unless ``force``
-    is passed. Does not touch the root logger or other Hermes loggers.
+    is passed. Does not touch the root logger or other Norual loggers.
     """
     global _DEBUG_HANDLER_INSTALLED, _PLUGINS_DEBUG
     if force:
@@ -183,7 +183,7 @@ VALID_HOOKS: Set[str] = {
     #   {"action": "continue", "message": "<follow-up instruction>"}
     # The Claude-Code Stop shape {"decision": "block", "reason": "..."} (block
     # the stop == keep going) is accepted too. Anything else lets the turn
-    # finish. Hermes' shipped guidance lives in the evidence-based
+    # finish. Norual' shipped guidance lives in the evidence-based
     # verification-stop nudge; this hook is for user/plugin policy and is
     # bounded by agent.max_verify_nudges.
     "pre_verify",
@@ -264,9 +264,9 @@ VALID_HOOKS: Set[str] = {
     # SQLite write lock). Observers only: return values are ignored.
     #
     # WHICH PROCESS each fires in matters, because kanban workers run as
-    # separate `hermes -p <profile> chat -q` subprocesses:
+    # separate `norual -p <profile> chat -q` subprocesses:
     #   - kanban_task_claimed   -> the DISPATCHER process (gateway-embedded
-    #                              dispatcher or `hermes kanban dispatch`),
+    #                              dispatcher or `norual kanban dispatch`),
     #                              right before the worker subprocess spawns.
     #   - kanban_task_completed -> the WORKER process, when it calls
     #                              kanban_complete (or a CLI/manual complete).
@@ -294,7 +294,7 @@ VALID_HOOKS: Set[str] = {
     #
     # WHICH PROCESS: worker spawn/exit/stale-claim and the dispatch tick
     # fire in the DISPATCHER process (gateway-embedded dispatcher or
-    # ``hermes kanban dispatch``); on_kanban_task_updated fires in whichever
+    # ``norual kanban dispatch``); on_kanban_task_updated fires in whichever
     # process committed the mutation (CLI, worker, or the gateway-embedded
     # dashboard API).
     #
@@ -559,7 +559,7 @@ def _serialized_replacement(method):
 
 @contextmanager
 def _plugin_home_scope(home: Path):
-    """Bind discovery and loading to the manager's immutable Hermes home."""
+    """Bind discovery and loading to the manager's immutable Norual home."""
     token = set_hermes_home_override(home)
     try:
         yield
@@ -666,7 +666,7 @@ _KNOWN_MANIFEST_FIELDS: Set[str] = {
     "capabilities", "emits", "listens", "hermes", "depends",
 }
 
-# Highest manifest schema version this Hermes understands.
+# Highest manifest schema version this Norual understands.
 SUPPORTED_MANIFEST_VERSION = 2
 
 _CONFIG_SCHEMA_TYPES: Dict[str, tuple] = {
@@ -705,7 +705,7 @@ def _parse_manifest_v2_fields(data: Mapping, key: str) -> Dict[str, Any]:
         mv = 1
     if mv > SUPPORTED_MANIFEST_VERSION:
         logger.warning(
-            "Plugin %s: manifest_version %d is newer than this Hermes "
+            "Plugin %s: manifest_version %d is newer than this Norual "
             "supports (%d); loading anyway and ignoring unknown fields",
             key, mv, SUPPORTED_MANIFEST_VERSION,
         )
@@ -894,7 +894,7 @@ def resolve_plugin_load_order(
                 logger.warning(
                     "Plugin %s requires plugin '%s' which is not enabled/"
                     "installed; loading anyway (probe availability at runtime "
-                    "via ctx.has_plugin). Run `hermes plugins enable %s` if "
+                    "via ctx.has_plugin). Run `norual plugins enable %s` if "
                     "it is installed.",
                     k, dep_id, dep_id,
                 )
@@ -1062,7 +1062,7 @@ class PluginManifest:
     #              (untrusted code).
     kind: str = "standalone"
     # Registry key — path-derived, used by ``plugins.enabled``/``disabled``
-    # lookups and by ``hermes plugins list``. For a flat plugin at
+    # lookups and by ``norual plugins list``. For a flat plugin at
     # ``plugins/disk-cleanup/`` the key is ``disk-cleanup``; for a nested
     # category plugin at ``plugins/image_gen/openai/`` the key is
     # ``image_gen/openai``. When empty, falls back to ``name``.
@@ -1089,7 +1089,7 @@ class PluginManifest:
     # loads (plugins can probe availability via ``ctx.has_plugin``). Load
     # ORDER honors these edges: if A requires B, B registers first.
     requires_plugins: List[Dict[str, Any]] = field(default_factory=list)
-    # Declared pip dependencies. VALIDATED AND SURFACED ONLY — Hermes never
+    # Declared pip dependencies. VALIDATED AND SURFACED ONLY — Norual never
     # auto-installs these (isolation design for the install seam is a
     # deferred follow-up; see #64165 round-2 review and #15220).
     python_dependencies: List[str] = field(default_factory=list)
@@ -1106,7 +1106,7 @@ class PluginManifest:
     # ``<key>:`` namespace (e.g. ``["ping"]`` → publishes ``<key>:ping``).
     # ``listens`` lists the fully-qualified ``<plugin>:<event>`` names this
     # plugin subscribes to. Both are purely for discoverability
-    # (``hermes plugins show``); a plugin may emit/subscribe without declaring.
+    # (``norual plugins show``); a plugin may emit/subscribe without declaring.
     emits: List[str] = field(default_factory=list)
     listens: List[str] = field(default_factory=list)
 
@@ -1228,7 +1228,7 @@ def _plugin_relative_segments(key: str) -> tuple[str, ...]:
     """Validate and split a plugin-relative settings key.
 
     The public API accepts only relative keys (``endpoint`` or
-    ``retry.policy``).  Full Hermes paths, traversal syntax, and the security-
+    ``retry.policy``).  Full Norual paths, traversal syntax, and the security-
     sensitive core roots called out in #64227 are rejected before any config
     read occurs.
     """
@@ -1500,7 +1500,7 @@ class PluginContext:
         # The lock covers the merge read plus atomic save, preventing sibling
         # plugin writes from racing between those two steps.
         # Serialize bridge-to-bridge writes across processes as well as
-        # threads. Other Hermes config writers still retain their existing
+        # threads. Other Norual config writers still retain their existing
         # atomic-replace semantics; this lock specifically prevents two
         # plugin read/merge/write transactions from dropping siblings.
         with _locked_plugin_state(config_mod.get_config_path()):
@@ -1620,7 +1620,7 @@ class PluginContext:
 
     @property
     def profile_name(self) -> str:
-        """Return the active Hermes profile name (e.g. ``"default"``).
+        """Return the active Norual profile name (e.g. ``"default"``).
 
         Derived from ``HERMES_HOME`` via
         :func:`hermes_cli.profiles.get_active_profile_name`, so it works in
@@ -1955,7 +1955,7 @@ class PluginContext:
     def _tool_override_allowed(self, tool_name: str) -> bool:
         """Return True if this plugin is configured to override built-in tools.
 
-        Bundled plugins (shipped with Hermes core) are trusted by default —
+        Bundled plugins (shipped with Norual core) are trusted by default —
         an override there is a deliberate maintainer choice, not a third-party
         plugin trying to elevate privilege. For every other source, the
         canonical check is :func:`plugin_capability_granted` with the
@@ -2086,7 +2086,7 @@ class PluginContext:
         handler_fn: Callable | None = None,
         description: str = "",
     ) -> PluginRegistration:
-        """Register a CLI subcommand (e.g. ``hermes honcho ...``).
+        """Register a CLI subcommand (e.g. ``norual honcho ...``).
 
         The *setup_fn* receives an argparse subparser and should add any
         arguments/sub-subparsers.  If *handler_fn* is provided it is set
@@ -2130,7 +2130,7 @@ class PluginContext:
         The handler signature is ``fn(raw_args: str) -> str | None``.
         It may also be an async callable — the gateway dispatch handles both.
 
-        Unlike ``register_cli_command()`` (which creates ``hermes <subcommand>``
+        Unlike ``register_cli_command()`` (which creates ``norual <subcommand>``
         terminal commands), this registers in-session slash commands that users
         invoke during a conversation.
 
@@ -2670,7 +2670,7 @@ class PluginContext:
         ``source`` must be an instance of
         :class:`agent.secret_sources.base.SecretSource`.  Registered
         sources run during ``load_hermes_dotenv()`` startup — after
-        ``~/.hermes/.env`` loads, before Hermes reads credentials — when
+        ``~/.hermes/.env`` loads, before Norual reads credentials — when
         their ``secrets.<source.name>`` config section is enabled.  The
         orchestrator (``agent.secret_sources.registry.apply_all``) owns
         ordering, mapped-vs-bulk precedence, conflict warnings, and
@@ -2957,7 +2957,7 @@ class PluginContext:
     ) -> PluginRegistration:
         """Register a Slack Block Kit action handler from a plugin.
 
-        Hermes' Slack adapter wires registered handlers into its
+        Norual' Slack adapter wires registered handlers into its
         ``slack_bolt.AsyncApp`` at connect time. The callback is invoked
         when a user clicks a button (or interacts with another Block Kit
         action element) whose ``action_id`` matches.
@@ -3036,7 +3036,7 @@ class PluginContext:
         Plugins use this to declare their own auxiliary tasks without touching
         core files. After registration, the task:
 
-          - Appears in the ``hermes model → Configure auxiliary models`` picker
+          - Appears in the ``norual model → Configure auxiliary models`` picker
           - Has its provider/model/base_url/api_key bridged from config.yaml to
             ``AUXILIARY_<KEY_UPPER>_*`` env vars at gateway startup
           - Gets default routing fields (provider="auto", model="", etc.) merged
@@ -3529,7 +3529,7 @@ class PluginManager:
         # Multi-profile constraint (#65593): several process-global registries
         # (tools, platforms, providers) are shared across profiles while
         # multiple PluginManager instances may coexist in one process (keyed
-        # by resolved hermes home). The ledger is therefore keyed per manager
+        # by resolved norual home). The ledger is therefore keyed per manager
         # — i.e. per (hermes_home, plugin_id) — and every release/restore
         # closure is identity-conditional, so one profile's unload can never
         # clear another profile's registrations. Registry overlays keyed by
@@ -3551,7 +3551,7 @@ class PluginManager:
         # discovery time (see _register_deferred_platform_tools). Keyed by
         # plugin id: the already-imported package module, so materializing the
         # adapter later doesn't re-execute it, and the tool names it
-        # contributed, so `hermes plugins list` still attributes them once the
+        # contributed, so `norual plugins list` still attributes them once the
         # full plugin loads.
         self._predeclared_modules: Dict[str, types.ModuleType] = {}
         self._predeclared_tools: Dict[str, List[str]] = {}
@@ -4076,7 +4076,7 @@ class PluginManager:
         stale_relay_keys = legacy_relay_plugin_keys(enabled)
         if stale_relay_keys:
             logger.warning(
-                "Removed Hermes plugin %s is still listed in plugins.enabled; "
+                "Removed Norual plugin %s is still listed in plugins.enabled; "
                 "remove it and configure native Relay plugins with %s",
                 ", ".join(stale_relay_keys),
                 RELAY_PLUGINS_CONFIG_ENV,
@@ -4091,7 +4091,7 @@ class PluginManager:
         for manifest in winners.values():
             lookup_key = manifest.key or manifest.name
 
-            # Relay lifecycle ownership now lives in the Hermes core. Loading
+            # Relay lifecycle ownership now lives in the Norual core. Loading
             # an old user or entry-point copy would let plugin.initialize()
             # compete for the same process-global Relay registries.
             if (
@@ -4100,12 +4100,12 @@ class PluginManager:
             ):
                 loaded = LoadedPlugin(manifest=manifest, enabled=False)
                 loaded.error = (
-                    "removed — Relay lifecycle is owned by Hermes core; configure "
+                    "removed — Relay lifecycle is owned by Norual core; configure "
                     f"{RELAY_PLUGINS_CONFIG_ENV} instead"
                 )
                 self._plugins[lookup_key] = loaded
                 logger.warning(
-                    "Refusing to load removed Hermes Relay plugin '%s'; %s",
+                    "Refusing to load removed Norual Relay plugin '%s'; %s",
                     lookup_key,
                     loaded.error,
                 )
@@ -4150,7 +4150,7 @@ class PluginManager:
                 )
                 continue
 
-            # Built-in backends auto-load — they ship with hermes and must
+            # Built-in backends auto-load — they ship with norual and must
             # just work. Selection among them (e.g. which image_gen backend
             # services calls) is driven by ``<category>.provider`` config,
             # enforced by the tool wrapper.
@@ -4163,11 +4163,11 @@ class PluginManager:
             # heavy, platform-specific SDKs at module level (lark_oapi,
             # microsoft_teams, discord.py, slack_bolt, ...), so eagerly loading
             # all ~20 of them added several seconds to every `hermes`
-            # invocation — including plain `hermes chat`, which never touches a
+            # invocation — including plain `norual chat`, which never touches a
             # gateway platform. Instead we register a cheap deferred loader in
             # the platform_registry keyed on the platform name; the real module
             # is imported only when the gateway / cron / setup / send_message
-            # path actually asks for that platform. Every platform Hermes ships
+            # path actually asks for that platform. Every platform Norual ships
             # remains available out of the box — it just loads on first use.
             if manifest.source == "bundled" and manifest.kind == "platform":
                 self._register_deferred_platform(manifest)
@@ -4184,7 +4184,7 @@ class PluginManager:
             if not is_enabled:
                 loaded = LoadedPlugin(manifest=manifest, enabled=False)
                 loaded.error = (
-                    "not enabled in config (run `hermes plugins enable {}` to activate)"
+                    "not enabled in config (run `norual plugins enable {}` to activate)"
                     .format(lookup_key)
                 )
                 self._plugins[lookup_key] = loaded
@@ -4573,7 +4573,7 @@ class PluginManager:
         directory plugins: memory providers (``exclusive``) and model
         providers (``model-provider``) have their own discovery systems,
         so importing them here registers nothing and only pays the
-        module's import cost in every Hermes process (e.g. a pip
+        module's import cost in every Norual process (e.g. a pip
         memory-provider plugin pulling in onnxruntime via fastembed —
         ~60 MB RSS on startup).
 
@@ -4649,13 +4649,13 @@ class PluginManager:
         The platform adapter module is imported only when the gateway / cron /
         setup / send_message path first asks the ``platform_registry`` for this
         platform. Until then we record a lightweight ``LoadedPlugin`` so
-        ``hermes plugins list`` still shows the platform as available, and we
+        ``norual plugins list`` still shows the platform as available, and we
         hand the registry a loader that runs the normal eager-load path.
         """
         lookup_key = manifest.key or manifest.name
         platform_name = self._platform_name_from_manifest(manifest)
 
-        # Record an enabled placeholder for introspection (`hermes plugins
+        # Record an enabled placeholder for introspection (`norual plugins
         # list`). The real module load swaps in a fully-populated LoadedPlugin
         # (tools/hooks/commands attribution) when the loader fires.
         loaded = LoadedPlugin(manifest=manifest, enabled=True)
@@ -4740,7 +4740,7 @@ class PluginManager:
         agent calls like any other tool. Deferring the plugin defers both, so
         in a CLI/TUI process the client tools never register at all:
         ``resolve_toolset()`` returns ``[]``, the toolset is missing from the
-        ``hermes tools`` checklist, and even an explicit ``platform_toolsets``
+        ``norual tools`` checklist, and even an explicit ``platform_toolsets``
         entry is dropped because the key is unknown. The same tools work in
         gateway/web processes only because those materialize every platform at
         startup (issue #78050).
@@ -4817,7 +4817,7 @@ class PluginManager:
         except Exception as exc:
             # A register_tools() that registered some tools and THEN raised
             # leaves those tools live in the registry. Credit them, or
-            # `hermes plugins list` under-reports what the process is actually
+            # `norual plugins list` under-reports what the process is actually
             # carrying — and _load_plugin's own diff would miss them later
             # too, since they are already in its "before" snapshot.
             partial = [t for t in self._plugin_tool_names if t not in before]
@@ -4855,7 +4855,7 @@ class PluginManager:
     def _warn_python_dependencies(self, manifest: PluginManifest) -> None:
         """Surface declared pip dependencies (#64165).
 
-        python_dependencies is a declaration seam ONLY: Hermes validates and
+        python_dependencies is a declaration seam ONLY: Norual validates and
         prints the requirements with an install hint but NEVER auto-installs
         them. The isolation design (constraints installs vs. vendored dirs
         vs. conflict-detection-and-refusal) is an explicitly deferred
@@ -4880,7 +4880,7 @@ class PluginManager:
         if missing:
             logger.warning(
                 "Plugin %s declares Python dependencies that are not "
-                "installed: %s. Hermes does not install plugin dependencies "
+                "installed: %s. Norual does not install plugin dependencies "
                 "automatically; install them yourself, e.g.: pip install %s",
                 key, ", ".join(missing),
                 " ".join(f"'{m}'" for m in missing),
@@ -5009,7 +5009,7 @@ class PluginManager:
                 ]
                 # Tools this plugin already contributed at discovery time were
                 # registered before ``registration_start``, so the ledger slice
-                # above cannot see them and `hermes plugins list` would
+                # above cannot see them and `norual plugins list` would
                 # under-report once the deferred adapter materializes (#78050).
                 # Credit them back to the plugin that actually registered them.
                 _predeclared = [
@@ -5189,7 +5189,7 @@ class PluginManager:
 
         # Evict any stale sys.modules entries for this slug before
         # (re-)importing. A same-slug module may already be cached here
-        # from a different Hermes home (profile switch reusing a slug
+        # from a different Norual home (profile switch reusing a slug
         # like "hermes-lcm") or from an earlier force=True reload in the
         # same home. Replacing only sys.modules[module_name] below is not
         # enough: the plugin's own relative imports (`from . import foo`)
@@ -5743,7 +5743,7 @@ class PluginManager:
 # keeps working — ``get_plugin_manager()`` still reads/writes this name.
 _plugin_manager: Optional[PluginManager] = None
 
-# Keyed cache: resolved Hermes home -> PluginManager. Hermes supports
+# Keyed cache: resolved Norual home -> PluginManager. Norual supports
 # multiple profiles via different HERMES_HOME directories, and a single
 # long-lived process (gateway multiplexer, test session, embedder) can
 # switch between them via ``set_hermes_home_override()`` — which is a
@@ -5763,9 +5763,9 @@ def _plugin_home_key() -> Path:
     Plugins are discovered from ``get_hermes_home() / "plugins"`` and some
     plugins (notably context engines such as hermes-lcm) capture that home
     at registration time for profile-scoped storage. A long-lived process
-    can temporarily switch Hermes home (env var *or* the context-local
+    can temporarily switch Norual home (env var *or* the context-local
     ``set_hermes_home_override()``) while serving another profile, so the
-    plugin manager must be scoped to the active Hermes home instead of
+    plugin manager must be scoped to the active Norual home instead of
     being one process-wide singleton.
     """
     try:
@@ -5808,7 +5808,7 @@ def _clear_plugin_submodules(manager: Optional[PluginManager]) -> None:
 
 
 def get_plugin_manager() -> PluginManager:
-    """Return the plugin manager for the active Hermes profile/home.
+    """Return the plugin manager for the active Norual profile/home.
 
     Managers are cached per resolved home so repeated calls within the
     same profile reuse discovery state (normal performance), while a
@@ -6740,7 +6740,7 @@ def get_plugin_subscriptions() -> Dict[str, List[Callable]]:
 def get_plugin_toolsets() -> List[tuple]:
     """Return plugin toolsets as ``(key, label, description)`` tuples.
 
-    Used by the ``hermes tools`` TUI so plugin-provided toolsets appear
+    Used by the ``norual tools`` TUI so plugin-provided toolsets appear
     alongside the built-in ones and can be toggled on/off per platform.
     """
     manager = get_plugin_manager()

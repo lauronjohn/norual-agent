@@ -530,7 +530,7 @@ def to_agent_visible_cache_path(
 
     Per-backend base (mirrors ``_agent_cache_base_for_env`` in
     tools/image_generation_tool.py, the proven heuristics for where each
-    backend's Hermes cache lands):
+    backend's Norual cache lands):
 
     * docker / modal — bind-mounted (docker) or per-file-synced (modal) at
       ``/root/.hermes`` (the *container_base* default).
@@ -548,7 +548,7 @@ def to_agent_visible_cache_path(
     """
     backend = (os.environ.get("TERMINAL_ENV") or "local").strip().lower()
     if backend in ("docker", "modal"):
-        pass  # /root/.hermes default
+        pass  # /root/.norual default
     elif backend in ("ssh", "daytona", "vercel_sandbox"):
         container_base = "~/.hermes"
     else:

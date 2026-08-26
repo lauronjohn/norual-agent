@@ -42,9 +42,9 @@ def test_timestamps_on_sets_and_persists(tmp_path, monkeypatch):
 
 
 def _render_history(history, show_ts):
-    from cli import HermesCLI
+    from cli import NorualCLI
 
-    h = HermesCLI.__new__(HermesCLI)
+    h = NorualCLI.__new__(NorualCLI)
     h.show_timestamps = show_ts
     h.conversation_history = history
     h._show_recent_sessions = lambda reason="history", limit=10: True

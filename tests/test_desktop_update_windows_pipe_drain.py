@@ -1,7 +1,7 @@
 """Regression: the Windows Desktop update hand-off must not meter its step pipes.
 
 ``scripts/desktop-update/windows.ps1`` runs each update step through
-``Invoke-HermesStep``, which starts the step with ``RedirectStandardOutput`` /
+``Invoke-NorualStep``, which starts the step with ``RedirectStandardOutput`` /
 ``RedirectStandardError``. Reading those pipes back has two failure modes, and
 this fixture covers both because they pull in opposite directions.
 
@@ -14,7 +14,7 @@ last of them to close it. ``hermes update`` deliberately runs build steps with
 stdout inherited (the tee-stderr runner in ``hermes_cli/main.py``), so the
 process tree under a step is arbitrarily deep and not something the hand-off can
 enumerate. When one of those descendants is a resident gateway, the pipe never
-closes and ``Invoke-HermesStep`` blocks for the life of the gateway.
+closes and ``Invoke-NorualStep`` blocks for the life of the gateway.
 
 Everything the hand-off owes the Desktop is downstream of that call:
 ``.hermes-update-result.json`` is never written, ``.hermes-update-in-progress``
@@ -57,12 +57,12 @@ def test_pipe_drain_survives_a_leak_without_metering_a_chatty_step(
     """Execute the real drain against both shapes of step.
 
     ``-SelfTestPipeDrain`` runs two steps through the real
-    ``Invoke-HermesStep``:
+    ``Invoke-NorualStep``:
 
     *leak* -- a step that spawns a grandchild with ``UseShellExecute = $false``
     and no redirection (the shape that makes the grandchild inherit the step's
     stdout/stderr), then exits 7 while the grandchild sleeps on. The fixture
-    asserts the grandchild was **still alive** when ``Invoke-HermesStep``
+    asserts the grandchild was **still alive** when ``Invoke-NorualStep``
     returned, so a pass cannot be a timing coincidence, and that the exit code
     and the step's output both survived the abandonment.
 

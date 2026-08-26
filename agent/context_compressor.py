@@ -858,7 +858,7 @@ def _reinject_pruned_skill_markers(summary: str, skill_names: list[str]) -> str:
 # disposable bulk), (b) demotion of old tool results to stubs that carry a
 # RECOVERY POINTER instead of deleting content outright, and (c) a
 # deterministic recovery footer naming the exact session_search call that
-# re-accesses the compacted region. Hermes already persists every
+# re-accesses the compacted region. Norual already persists every
 # pre-compaction message in state.db — session_search makes compaction
 # lossy-but-recoverable, which none of the scouted competitors have at
 # runtime.
@@ -950,7 +950,7 @@ def _build_verbatim_user_section(turns: List[Dict[str, Any]]) -> str:
 def _build_recovery_footer(session_id: str, region_len: int) -> str:
     """Deterministic pointer to the compacted region in session history.
 
-    Hermes persists every pre-compaction message in state.db; session_search
+    Norual persists every pre-compaction message in state.db; session_search
     reaches it. The footer makes that re-access path explicit so the model
     treats compaction as deferred retrieval, not loss.
     """
@@ -1753,7 +1753,7 @@ def _strip_historical_media(messages: List[Dict[str, Any]]) -> List[Dict[str, An
 
     Shallow copies of touched messages only; input is never mutated.
     Port of Kilo-Org/kilocode#9434 (adapted for the OpenAI-style message
-    shape the hermes compressor emits).
+    shape the norual compressor emits).
     """
     if not messages:
         return messages
@@ -3439,7 +3439,7 @@ class ContextCompressor(ContextEngine):
         """Return True when a high rough preflight estimate is known-noisy.
 
         ``estimate_request_tokens_rough(..., tools=...)`` intentionally
-        overestimates so Hermes compresses before a provider rejects the
+        overestimates so Norual compresses before a provider rejects the
         payload — but the margin is not a fixed percentage: CJK text is
         counted at ~1.7x its o200k cost and Responses-mode reasoning replay
         blobs at several times their billed cost, so heavy sessions can show
@@ -7865,7 +7865,7 @@ This compaction should PRIORITISE preserving all information related to the focu
         # request-build time), so ``last_head_role`` defaults to "user" and
         # the summary is emitted as role="assistant". On a session whose only
         # genuine user turn falls into the compressed middle — e.g. a
-        # ``hermes kanban`` worker seeded with a single short
+        # ``norual kanban`` worker seeded with a single short
         # ``"work kanban task <id>"`` prompt followed by nothing but
         # assistant/tool turns — that leaves the compressed transcript with
         # ZERO user-role messages. OpenAI-compatible backends (vLLM/Qwen)

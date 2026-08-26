@@ -61,13 +61,13 @@ def _auth_error_message(exc: BaseException) -> str:
     return (
         "Honcho rejected our credentials and a forced token refresh did not "
         f"recover: {_redact_tokens(str(exc))}. "
-        "Re-authenticate with 'hermes honcho setup'."
+        "Re-authenticate with 'norual honcho setup'."
     )
 
 
 _REAUTH_REQUIRED_MESSAGE = (
     "Honcho OAuth grant is revoked and cannot be refreshed; "
-    "re-authenticate with 'hermes honcho setup'."
+    "re-authenticate with 'norual honcho setup'."
 )
 
 
@@ -935,7 +935,7 @@ class HonchoSessionManager:
 
         try:
             result = self._authed_call("dialectic query", _chat_once)
-            # Only automatic injection uses the Hermes-side character cap.
+            # Only automatic injection uses the Norual-side character cap.
             if (
                 apply_injection_cap
                 and result
@@ -1036,7 +1036,7 @@ class HonchoSessionManager:
         except Exception as e:
             logger.warning("Failed to fetch user context from Honcho: %s", e)
 
-        # Also fetch AI peer's own representation so Hermes knows itself.
+        # Also fetch AI peer's own representation so Norual knows itself.
         try:
             ai_ctx = self._fetch_peer_context(session.assistant_peer_id, target=session.assistant_peer_id)
             result["ai_representation"] = ai_ctx["representation"]

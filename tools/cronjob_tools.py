@@ -1,5 +1,5 @@
 """
-Cron job management tools for Hermes Agent.
+Cron job management tools for Norual Agent.
 
 Expose a single compressed action-oriented tool to avoid schema/context bloat.
 Compatibility wrappers remain for direct Python callers and legacy tests.
@@ -577,7 +577,7 @@ def _validate_bot_chat_deliver(deliver: Optional[str]) -> Optional[str]:
             return (
                 f"bot-chat delivery profile '{profile_arg}' not found on this "
                 "gateway's machine. Bot Chat delivery is machine-local — use a "
-                "profile that exists here (hermes profile list), or omit the "
+                "profile that exists here (norual profile list), or omit the "
                 "name (deliver='bot-chat') for the job's own profile."
             )
     return None
@@ -1074,7 +1074,7 @@ def _try_dispatch_background_run(
     -------
     None
         Background delivery unavailable on this session runtime (one-shot
-        ``hermes -z``, stateless HTTP, Kanban worker, nested cron run).
+        ``norual -z``, stateless HTTP, Kanban worker, nested cron run).
         Caller falls back to the synchronous path unchanged.
     dict
         ``{"claimed": False, "success": False, "error": ...}`` — claim lost;
@@ -1143,7 +1143,7 @@ def _try_dispatch_background_run(
         # fail closed and the completion could never be claimed.
         session_key = str(session_id)
     if not session_key:
-        # Direct Python callers (`hermes cron run`, tests) have no agent
+        # Direct Python callers (`norual cron run`, tests) have no agent
         # session to deliver a completion to — the process exits right after
         # the tool returns. Run synchronously.
         return None
@@ -1333,9 +1333,9 @@ def _gateway_liveness_notice(plural: bool = False) -> dict:
         return {
             "gateway_running": False,
             "warning": (
-                f"The Hermes gateway is not running — {subject} "
+                f"The Norual gateway is not running — {subject} "
                 "but will NOT fire until the gateway is started "
-                "(hermes gateway install / hermes gateway start). "
+                "(norual gateway install / norual gateway start). "
                 "Tell the user the task is scheduled but not active yet."
             ),
         }
@@ -1480,7 +1480,7 @@ def cronjob(
                     monitor_script=_normalize_optional_job_value(monitor_script),
                     monitor_url=_normalize_optional_job_value(monitor_url),
                     # reasoning_effort reaches here from the CLI
-                    # (hermes cron create --reasoning-effort) ONLY — it is
+                    # (norual cron create --reasoning-effort) ONLY — it is
                     # deliberately absent from CRONJOB_SCHEMA and the model
                     # dispatch below: models do not make model-config
                     # decisions (standing policy).
@@ -1960,7 +1960,7 @@ def _cronjob_handler(args, **kw):
         skills=args.get("skills"),
         # model / provider / base_url are intentionally NOT read from the
         # agent's arguments: per-job inference pins are user-owned (dashboard,
-        # `hermes cron create/edit --model`, or hand-edited jobs). The agent
+        # `norual cron create/edit --model`, or hand-edited jobs). The agent
         # must not be able to point unattended spend at a different model.
         # Programmatic callers of cronjob() itself retain the parameters.
         reason=args.get("reason"),

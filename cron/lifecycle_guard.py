@@ -1,7 +1,7 @@
 """Gateway lifecycle guard for cron job creation (#30719).
 
 An agent running inside a gateway can schedule a cron job that calls
-``hermes gateway restart`` (or ``launchctl kickstart ai.hermes.gateway``
+``norual gateway restart`` (or ``launchctl kickstart ai.hermes.gateway``
 or ``systemctl restart hermes-gateway``).  When the cron fires, the
 gateway dies, the supervisor (launchd KeepAlive / systemd Restart=)
 revives it, auto-resume picks up the offending session, and the resumed
@@ -11,11 +11,11 @@ until manually broken.
 This module rejects cron job specs whose prompt or script contains a
 direct shell-level gateway-lifecycle command.  It is enforced at
 ``cron.jobs.create_job`` so it fires on every job-creation path: the
-``hermes cron create`` CLI subcommand AND the agent's ``cronjob`` model
+``norual cron create`` CLI subcommand AND the agent's ``cronjob`` model
 tool (which calls ``create_job`` directly, bypassing the CLI layer).
 
 The pattern is intentionally command-shaped: it anchors on a concrete
-command identifier (``hermes gateway``, ``launchctl ... hermes-gateway``,
+command identifier (``norual gateway``, ``launchctl ... hermes-gateway``,
 ``systemctl ... hermes-gateway``, ``pkill`` against the gateway) so it
 cannot fire on prose.  A cron ``prompt`` is fed to a future LLM, not a
 shell, so an over-broad substring match on English ("Kong API gateway
@@ -26,13 +26,13 @@ command shape.
 This is a defence-in-depth layer.  ``tools/terminal_tool.py`` blocks direct
 commands and shell scripts they reference when ``_HERMES_GATEWAY=1``. It also
 rejects ``launchctl submit`` in gateway sessions because launchd treats that
-primitive as a persistent KeepAlive job, not a one-shot task. ``hermes gateway
+primitive as a persistent KeepAlive job, not a one-shot task. ``norual gateway
 stop|restart|uninstall`` separately refuse to self-target from inside the gateway.
 Blocking cron specs at creation time as well means the agent gets an immediate,
 informative rejection instead of scheduling a job that will only fail
 (silently) when it fires.
 
-The profile-flag form (``hermes -p <profile> gateway restart|stop``, #78028)
+The profile-flag form (``norual -p <profile> gateway restart|stop``, #78028)
 is handled profile-aware: it is blocked only when the named profile is the
 profile running the guard. Sibling-profile restarts are legitimate fleet
 operations and stay allowed.
@@ -60,21 +60,21 @@ class GatewayLifecycleBlocked(ValueError):
 # actual shell-command-shaped strings, not on prose.
 _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     r"(?i)"
-    # Branch A: destructive `hermes gateway` operations.
+    # Branch A: destructive `norual gateway` operations.
     # The destructive operations are restart, stop, and uninstall.
     # `start` is intentionally excluded: starting a gateway from inside a
     # gateway is benign (a no-op or "already running" error), and a
     # legitimate cron job might start a sibling profile's gateway.
     # The lookbehind (#77173): `hermes` must not be a path component or a
     # word tail. Excluding `/`, word chars, `.` and `-` keeps file paths
-    # with embedded spaces (`/docs/hermes gateway restart-notes.md`) from
+    # with embedded spaces (`/docs/norual gateway restart-notes.md`) from
     # matching via the `/hermes` tail, while every real command position
     # (start of text, whitespace, `;`/`&`/`|`, `$(`, backtick, even a
     # U+FFFD from binary-content decoding) still matches.
     r"(?:(?<![/\w.\-])hermes\s+gateway\s+(?:restart|stop|uninstall)\b)"
     # Branch B: launchctl ops on a hermes-gateway label. macOS launchd
     # labels look like `ai.hermes.gateway` / `hermes-gateway`. Requiring the
-    # gateway identifier prevents blocking unrelated hermes services (e.g.
+    # gateway identifier prevents blocking unrelated norual services (e.g.
     # `launchctl unload ai.hermes.update-checker.plist`).
     # `submit` and `bootstrap` are included alongside the direct verbs
     # (kickstart/etc.): `launchctl submit -l ai.hermes.gateway-<suffix> --
@@ -94,7 +94,7 @@ _GATEWAY_LIFECYCLE_PATTERN = re.compile(
     r"|(?:launchctl\s+(?:kickstart|unload|load|stop|restart|submit|bootstrap|bootout|remove|disable)\b[^\n]*\bhermes[.\-]?gateway)"
     # Branch C: systemctl ops on a hermes-gateway unit.
     r"|(?:systemctl\s+(?:-\S+\s+)*(?:restart|stop|start)\b[^\n]*\bhermes[.\-]?gateway)"
-    # Branch D: pkill / kill targeting the hermes gateway process. Both
+    # Branch D: pkill / kill targeting the norual gateway process. Both
     # token orders because real reproductions show both.
     # Leading \b ensures we match "pkill" or "kill" as whole words, not as
     # suffixes of other words (e.g. "skill" -> "kill").
@@ -123,11 +123,11 @@ _ARGV_LIST_PUNCTUATION = re.compile(r"[\[\],]+")
 
 
 # Branch A2 (#78028): the same foot-gun written with an explicit profile
-# selector — `hermes -p <profile> gateway restart|stop` / `--profile <name>`
+# selector — `norual -p <profile> gateway restart|stop` / `--profile <name>`
 # / `--profile=<name>`. The selector token between `hermes` and `gateway`
 # breaks Branch A's literal adjacency. Unlike Branch A this form is NOT
 # unconditionally self-targeting: issued from inside gateway `zeus`,
-# `hermes -p venus gateway restart` operates on a sibling profile's gateway
+# `norual -p venus gateway restart` operates on a sibling profile's gateway
 # and is a legitimate fleet operation. The pattern captures the named
 # profile so `contains_gateway_lifecycle_command` can block only the
 # self-targeting shape (named profile == the profile running the guard).
@@ -239,7 +239,7 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
         return False
     # Heredoc bodies that are provably inert data (quoted delimiter, data-sink
     # consumer like `cat > file <<'EOF'`) are masked before scanning (#88336):
-    # a runbook line "a human can run: hermes gateway restart" inside such a
+    # a runbook line "a human can run: norual gateway restart" inside such a
     # body is documentation, not a command this shell will execute. The
     # stripper fails open on ANY ambiguity (unquoted delimiter, shell
     # consumer, unterminated body), so executable heredocs are still scanned.
@@ -249,7 +249,7 @@ def contains_gateway_lifecycle_command(text: str) -> bool:
     normalized = _SHELL_LINE_CONTINUATION.sub(" ", text)
     if _GATEWAY_LIFECYCLE_PATTERN.search(normalized):
         return True
-    # Profile-flag form (#78028): `hermes -p <profile> gateway restart|stop`
+    # Profile-flag form (#78028): `norual -p <profile> gateway restart|stop`
     # bypasses Branch A because the selector sits between `hermes` and
     # `gateway`. It is only the same foot-gun when the named profile IS the
     # profile running the guard — sibling-profile restarts are legitimate
@@ -1192,7 +1192,7 @@ def _read_script_for_scanning(script_path: str) -> str:
         return ""
     script_text, unsafe = _read_referenced_script(resolved)
     if unsafe:
-        return "hermes gateway restart"
+        return "norual gateway restart"
     return script_text or ""
 
 
@@ -1251,7 +1251,7 @@ def check_gateway_lifecycle(
         # the filesystem root and trips the regular-file check, blocking
         # every innocent .py cron script, #77131). The direct command
         # regex below still scans the full text, so a literal
-        # `hermes gateway restart` embedded in a .py script is still
+        # `norual gateway restart` embedded in a .py script is still
         # blocked. Non-regular/oversized script files still fail closed
         # via the lifecycle-shaped sentinel in _read_script_for_scanning.
         unsafe = _lifecycle_command_scan_with_data_exemption(combined)
@@ -1266,6 +1266,6 @@ def check_gateway_lifecycle(
             "Blocked: cron job contains a gateway lifecycle command or persistent "
             "launchctl submit operation. This is blocked to prevent agent-driven "
             "SIGTERM-respawn loops under launchd/systemd supervision "
-            "(#30719). Run `hermes gateway restart` from a shell outside "
+            "(#30719). Run `norual gateway restart` from a shell outside "
             "the running gateway instead."
         )

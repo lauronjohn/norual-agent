@@ -13,7 +13,7 @@ or a linked OpenViking CLI config:
   OPENVIKING_API_KEY   — API key (required for authenticated servers)
   OPENVIKING_ACCOUNT   — Tenant account for local/trusted mode (default: default)
   OPENVIKING_USER      — Tenant user for local/trusted mode (default: default)
-  OPENVIKING_AGENT     — Hermes peer ID in OpenViking (default: hermes)
+  OPENVIKING_AGENT     — Norual peer ID in OpenViking (default: hermes)
 
 Capabilities:
   - Automatic memory extraction on session commit (6 categories)
@@ -67,7 +67,7 @@ _DEFAULT_ENDPOINT = "http://127.0.0.1:1933"
 _OPENVIKING_SERVICE_ENDPOINT = "https://api.vikingdb.cn-beijing.volces.com/openviking"
 _DEFAULT_AGENT = "hermes"
 _OPENVIKING_USER_AGENT = f"openviking-memory-hermes/{_HERMES_VERSION}"
-_AGENT_PROMPT_LABEL = "Hermes peer ID in OpenViking"
+_AGENT_PROMPT_LABEL = "Norual peer ID in OpenViking"
 _OVCLI_CONFIG_ENV = "OPENVIKING_CLI_CONFIG_FILE"
 _OVCLI_DEFAULT_RELATIVE_PATH = ".openviking/ovcli.conf"
 _OVCLI_SAVED_PREFIX = "ovcli.conf."
@@ -254,7 +254,7 @@ def _format_openviking_exception(error: Exception) -> str:
 
 
 def _derive_openviking_user_text(content: Any) -> str:
-    """Strip Hermes slash-skill scaffolding before sending content to OpenViking.
+    """Strip Norual slash-skill scaffolding before sending content to OpenViking.
 
     Defense-in-depth: MemoryManager already strips skill scaffolding for the
     whole provider fan-out (see ``MemoryManager._strip_skill_scaffolding``), so
@@ -968,7 +968,7 @@ def _normalize_openviking_url(url: str) -> str:
     # Local / LAN self-host remains allowed; reject cloud-metadata and other
     # always-blocked floors so a poisoned endpoint cannot SSRF via memory sync.
     # Never silently replace an explicitly unsafe endpoint with localhost: that
-    # could attach Hermes to an unrelated deployment and forward credentials to
+    # could attach Norual to an unrelated deployment and forward credentials to
     # a destination the user did not configure.
     try:
         check_url = candidate
@@ -982,7 +982,7 @@ def _normalize_openviking_url(url: str) -> str:
     except Exception as exc:
         logger.debug("OpenViking endpoint safety validation failed", exc_info=True)
         raise _OpenVikingEndpointError(
-            "OpenViking endpoint safety validation failed; Hermes refused the connection."
+            "OpenViking endpoint safety validation failed; Norual refused the connection."
         ) from exc
 
     return candidate
@@ -1577,7 +1577,7 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
         listener = _describe_local_port_listener(host, port)
         return (
             _LOCAL_SERVER_OCCUPIED,
-            f"Port {host}:{port} is occupied by {listener}. Hermes did not start "
+            f"Port {host}:{port} is occupied by {listener}. Norual did not start "
             "openviking-server because the listener has not passed OpenViking's /health check.",
         )
     server_cmd = shutil.which("openviking-server")
@@ -1590,13 +1590,13 @@ def _start_local_openviking_server(endpoint: str) -> tuple[str, str]:
     try:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         # Do not let the server child inherit this process's PYTHONPATH.
-        # The Hermes Desktop backend can include the Hermes venv's
+        # The Norual Desktop backend can include the Norual venv's
         # site-packages in PYTHONPATH. If inherited, openviking-server would
-        # import aiohttp and friends from the Hermes venv instead of its own
+        # import aiohttp and friends from the Norual venv instead of its own
         # (its venv's site-packages are shadowed because PYTHONPATH precedes
         # them) —
-        # and on Windows the loaded DLLs then lock the Hermes venv,
-        # aborting `hermes update` with access-denied on .pyd files.
+        # and on Windows the loaded DLLs then lock the Norual venv,
+        # aborting `norual update` with access-denied on .pyd files.
         # Strip PYTHONPATH so the server resolves packages from its own
         # venv. (#78153)
         child_env = os.environ.copy()
@@ -1712,7 +1712,7 @@ def _runtime_openviking_timeout_message(endpoint: str) -> str:
         f"Local OpenViking server at {endpoint} is not reachable. "
         "Tried to start openviking-server, but it did not become reachable "
         f"within {_LOCAL_OPENVIKING_AUTOSTART_TIMEOUT:.0f} seconds. "
-        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+        "OpenViking memory is temporarily unavailable; Norual will retry on a later access or when "
         "the config changes."
     )
 
@@ -2094,7 +2094,7 @@ def _print_openviking_ready(message: str, path: Optional[Path] = None) -> None:
     print(f"  {message}")
     if path is not None:
         print(f"  Config file: {path}")
-    print("  Start a new Hermes session to activate.\n")
+    print("  Start a new Norual session to activate.\n")
 
 
 def _run_existing_profile_setup(
@@ -2212,7 +2212,7 @@ def _run_create_profile_setup(
     save_choice = select(
         "  Save OpenViking config",
         [
-            ("Keep in Hermes only", "write values only to Hermes .env"),
+            ("Keep in Norual only", "write values only to Norual .env"),
             ("Mirror to OpenViking store", "write ~/.openviking/ovcli.conf.<name> and link it"),
         ],
         default=1,
@@ -2245,7 +2245,7 @@ def _run_create_profile_setup(
         env_path=env_path,
         values=values,
     )
-    _print_openviking_ready("Connection saved to Hermes .env.")
+    _print_openviking_ready("Connection saved to Norual .env.")
     return True
 
 
@@ -2386,7 +2386,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             {
                 "key": "agent",
                 "description": (
-                    "Hermes peer ID in OpenViking, sent as the actor peer and "
+                    "Norual peer ID in OpenViking, sent as the actor peer and "
                     "used for peer-scoped memories"
                 ),
                 "default": "hermes",
@@ -2658,7 +2658,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 if not healthy:
                     warning_message = (
                         f"OpenViking server at {endpoint} is still not reachable after auto-start. "
-                        "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                        "OpenViking memory is temporarily unavailable; Norual will retry on a later access or when "
                         "the config changes."
                     )
                 else:
@@ -2677,7 +2677,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
             except Exception as e:
                 warning_message = (
                     f"OpenViking server at {endpoint} could not be attached after auto-start: {e}. "
-                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Norual will retry on a later access or when "
                     "the config changes."
                 )
 
@@ -2703,7 +2703,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         if not _is_local_openviking_url(endpoint):
             _emit_runtime_warning(
                 f"Remote OpenViking server at {endpoint} is not reachable. "
-                "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                "OpenViking memory is temporarily unavailable; Norual will retry on a later access or when "
                 "the config changes. "
                 "Check the configured endpoint and network connectivity.",
                 warning_callback,
@@ -2729,7 +2729,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 self._runtime_start_pending = False
                 warning_message = (
                     f"Local OpenViking server at {endpoint} is not reachable. {start_message} "
-                    "OpenViking memory is temporarily unavailable; Hermes will retry on a later access or when "
+                    "OpenViking memory is temporarily unavailable; Norual will retry on a later access or when "
                     "the config changes."
                 )
                 self._client = None
@@ -2834,7 +2834,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
                 elif health_state != "healthy":
                     _emit_runtime_warning(
                         f"{health_message} OpenViking memory is temporarily unavailable; "
-                        "Hermes will retry on a later access or when the config changes.",
+                        "Norual will retry on a later access or when the config changes.",
                         warning_callback,
                     )
                     self._client = None
@@ -2858,7 +2858,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         ``/reload`` only refreshes ``os.environ`` — the existing provider
         instance is not re-initialized — so OPENVIKING_* values added to
         ``~/.hermes/.env`` after startup never reach the live client and tools
-        keep running against stale auth until the user restarts hermes (#21130).
+        keep running against stale auth until the user restarts norual (#21130).
 
         Re-resolve the connection settings on each access (same layering as
         ``initialize``) and rebuild + health-check only when a value actually
@@ -2958,7 +2958,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         self._failed_refresh = (settings_key, time.monotonic())
         if health_state == "responded":
             logger.warning(
-                "%s OpenViking memory is temporarily unavailable; Hermes will retry on a "
+                "%s OpenViking memory is temporarily unavailable; Norual will retry on a "
                 "later access (after cooldown) or when the config changes.",
                 health_message,
             )
@@ -4371,7 +4371,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         user_content: str,
         assistant_content: str,
     ) -> List[Dict[str, Any]]:
-        """Slice the completed turn out of Hermes' full canonical transcript."""
+        """Slice the completed turn out of Norual' full canonical transcript."""
         if not messages:
             return []
 
@@ -4490,7 +4490,7 @@ class OpenVikingMemoryProvider(MemoryProvider):
         *,
         assistant_peer_id: str = "",
     ) -> List[Dict[str, Any]]:
-        """Convert Hermes canonical messages into OpenViking batch payloads."""
+        """Convert Norual canonical messages into OpenViking batch payloads."""
         assistant_peer_id = str(assistant_peer_id or "").strip()
         tool_calls_by_id: Dict[str, Dict[str, Any]] = {}
         completed_tool_ids: set[str] = set()

@@ -1,1 +1,1 @@
-# Hermes plugins package
+# Norual plugins package

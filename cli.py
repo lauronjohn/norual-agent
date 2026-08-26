@@ -19751,8 +19751,13 @@ class NorualCLI(CLIAgentSetupMixin, CLICommandsMixin, CLIBillingMixin):
         def get_hint_height():
             if cli_ref._sudo_state or cli_ref._secret_state or cli_ref._approval_state or cli_ref._slash_confirm_state or cli_ref._clarify_state or cli_ref._command_running:
                 return 1
-            # Keep a spacer while the agent runs on roomy terminals, but reclaim
-            # the row on narrow/mobile screens where every line matters.
+            # Only keep the agent-running spacer when there is actual text to
+            # show. When get_hint_text() returns [] (agent running but no
+            # special prompt state), the spacer would render a blank line and
+            # create a visible gap above the status bar / input rule.
+            hint_text = get_hint_text()
+            if not hint_text:
+                return 0
             return cli_ref._agent_spacer_height()
 
         def get_spinner_text():

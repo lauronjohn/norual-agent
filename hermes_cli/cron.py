@@ -1,5 +1,5 @@
 """
-Cron subcommand for hermes CLI.
+Cron subcommand for norual CLI.
 
 Handles standalone cron management commands like list, create, edit,
 pause/resume/run/remove, status, and tick.
@@ -106,9 +106,9 @@ def _warn_if_gateway_not_running() -> None:
         return
 
     print(color("  ⚠  Gateway is not running — jobs won't fire automatically.", Colors.YELLOW))
-    print(color("     Start it with: hermes gateway install", Colors.DIM))
-    print(color("                    sudo hermes gateway install --system  # Linux servers", Colors.DIM))
-    print(color("     Check status:  hermes cron status", Colors.DIM))
+    print(color("     Start it with: norual gateway install", Colors.DIM))
+    print(color("                    sudo norual gateway install --system  # Linux servers", Colors.DIM))
+    print(color("     Check status:  norual cron status", Colors.DIM))
 
 
 def cron_list(show_all: bool = False):
@@ -119,7 +119,7 @@ def cron_list(show_all: bool = False):
 
     if not jobs:
         print(color("No scheduled jobs.", Colors.DIM))
-        print(color("Create one with 'hermes cron create ...' or the /cron command in chat.", Colors.DIM))
+        print(color("Create one with 'norual cron create ...' or the /cron command in chat.", Colors.DIM))
         return
 
     print()
@@ -236,7 +236,7 @@ def cron_tick():
         # (#87644). For the one-shot CLI surface, report cleanly instead of
         # dumping a traceback; the gateway ticker loop handles its own retry.
         print(color(f"✗ Cron tick failed: {exc}", Colors.RED))
-        print("  Check `hermes cron status` and the gateway log for details.")
+        print("  Check `norual cron status` and the gateway log for details.")
         return 1
     return 0
 
@@ -269,9 +269,9 @@ _INCIDENT_STATE_COLORS = {
 def cron_incidents(args) -> int:
     """List or acknowledge durable cron failure incidents.
 
-    ``hermes cron incidents [--state <s>]`` lists incidents (the stored error
+    ``norual cron incidents [--state <s>]`` lists incidents (the stored error
     is redacted and truncated at write time, safe for terminal display);
-    ``hermes cron incidents ack <id>`` closes one so its failure ping stays
+    ``norual cron incidents ack <id>`` closes one so its failure ping stays
     silent until the error signature changes.
     """
     from cron.incidents import ack_incident, list_incidents
@@ -282,7 +282,7 @@ def cron_incidents(args) -> int:
         if not incident_id:
             print(
                 color(
-                    "✗ Incident ID required: hermes cron incidents ack <incident_id>",
+                    "✗ Incident ID required: norual cron incidents ack <incident_id>",
                     Colors.RED,
                 )
             )
@@ -350,7 +350,7 @@ def cron_incidents(args) -> int:
     print(
         color(
             f"  {len(incidents)} incident(s)  |  ack one with: "
-            "hermes cron incidents ack <id>",
+            "norual cron incidents ack <id>",
             Colors.DIM,
         )
     )
@@ -418,7 +418,7 @@ def cron_status():
                 Colors.YELLOW,
             ))
             print(f"  PID: {', '.join(map(str, pids))}")
-            print("  Cron jobs may NOT be firing. Restart: hermes gateway restart")
+            print("  Cron jobs may NOT be firing. Restart: norual gateway restart")
         elif hb_age is not None and ok_age is not None and ok_age > STALE_AFTER:
             # Loop is alive (fresh heartbeat) but no tick has SUCCEEDED in a
             # long time → ticks are failing every iteration.
@@ -439,8 +439,8 @@ def cron_status():
                 if "Permission denied" in last_error:
                     print(color(
                         "  Hint: jobs.json may be owned by another user "
-                        "(e.g. rewritten by a root `docker exec hermes "
-                        "hermes cron ...`). Fix ownership to match the "
+                        "(e.g. rewritten by a root `docker exec norual "
+                        "norual cron ...`). Fix ownership to match the "
                         "gateway user, and prefer `docker exec -u <uid>:<gid>`.",
                         Colors.YELLOW,
                     ))
@@ -462,9 +462,9 @@ def cron_status():
         print(color("✗ Gateway is not running — cron jobs will NOT fire", Colors.RED))
         print()
         print("  To enable automatic execution:")
-        print("    hermes gateway install    # Install as a user service")
-        print("    sudo hermes gateway install --system  # Linux servers: boot-time system service")
-        print("    hermes gateway            # Or run in foreground")
+        print("    norual gateway install    # Install as a user service")
+        print("    sudo norual gateway install --system  # Linux servers: boot-time system service")
+        print("    norual gateway            # Or run in foreground")
 
     print()
 
@@ -697,7 +697,7 @@ def cron_resume(args) -> int:
 
 
 def cron_notepad(args) -> int:
-    """Handle ``hermes cron notepad <job_id> [get|set|delete|list]``.
+    """Handle ``norual cron notepad <job_id> [get|set|delete|list]``.
 
     The per-job durable KV scratchpad (``cron/notepad.py``). This CLI is the
     write path — a running cron agent updates its own notepad by invoking
@@ -718,7 +718,7 @@ def cron_notepad(args) -> int:
     try:
         if action == "set":
             if key is None or value is None:
-                print(color("Usage: hermes cron notepad <job_id> set <key> <value>", Colors.RED))
+                print(color("Usage: norual cron notepad <job_id> set <key> <value>", Colors.RED))
                 return 1
             notepad.set_note(job_id, key, value)
             print(color(f"Set notepad key '{key}' for job {job_id}.", Colors.GREEN))
@@ -726,7 +726,7 @@ def cron_notepad(args) -> int:
 
         if action == "get":
             if key is None:
-                print(color("Usage: hermes cron notepad <job_id> get <key>", Colors.RED))
+                print(color("Usage: norual cron notepad <job_id> get <key>", Colors.RED))
                 return 1
             stored = notepad.get_note(job_id, key)
             if stored is None:
@@ -737,7 +737,7 @@ def cron_notepad(args) -> int:
 
         if action == "delete":
             if key is None:
-                print(color("Usage: hermes cron notepad <job_id> delete <key>", Colors.RED))
+                print(color("Usage: norual cron notepad <job_id> delete <key>", Colors.RED))
                 return 1
             if notepad.delete_note(job_id, key):
                 print(color(f"Deleted notepad key '{key}' for job {job_id}.", Colors.GREEN))
@@ -804,5 +804,5 @@ def cron_command(args):
         return _job_action("remove", args.job_id, "Removed")
 
     print(f"Unknown cron command: {subcmd}")
-    print("Usage: hermes cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
+    print("Usage: norual cron [list|create|edit|pause|resume|run|remove|status|runs|tick]")
     sys.exit(1)

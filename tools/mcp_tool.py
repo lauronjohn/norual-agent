@@ -41,7 +41,7 @@ Example config::
           name: "X-User-Id"    # to this server's HTTP/SSE requests
           value_from: "static" # "static" (default) or "profile"
           value: "alice"       # required for static; profile mode uses the
-                               # active Hermes profile name
+                               # active Norual profile name
         timeout: 180
         skip_preflight: true  # bypass the content-type probe for a valid
                               # Streamable HTTP endpoint that answers HEAD/GET
@@ -447,7 +447,7 @@ def sdk_httpx():
 
     mcp 2.0 moved its HTTP transports and OAuth stack from ``httpx`` to
     ``httpx2`` — a separate distribution with the same public API, importable
-    side by side with Hermes' own pinned ``httpx``. Every object that crosses
+    side by side with Norual' own pinned ``httpx``. Every object that crosses
     the SDK boundary has to come from the module the SDK itself imports:
     the ``AsyncClient`` handed to ``streamable_http_client``, the client the
     ``sse_client`` factory returns, the ``Request`` built by the SDK's OAuth
@@ -525,7 +525,7 @@ def _check_logging_callback_support() -> bool:
     Mirrors ``_check_message_handler_support`` for backward compatibility
     with older MCP SDK versions.  Without a logging_callback, the SDK's
     default handler silently discards every ``notifications/message`` a
-    server emits, so server-side diagnostics never reach Hermes' logs.
+    server emits, so server-side diagnostics never reach Norual' logs.
     """
     if not _MCP_AVAILABLE:
         return False
@@ -738,12 +738,12 @@ def _build_safe_env(user_env: Optional[dict]) -> dict:
     Only passes through safe baseline variables (PATH, HOME, etc.) and XDG_*
     variables from the current process environment, secrets injected by an
     external secret source (Bitwarden, 1Password, plugin backends) that
-    Hermes explicitly tagged during dotenv loading, plus any variables
+    Norual explicitly tagged during dotenv loading, plus any variables
     explicitly specified by the user in the server config.
 
     This prevents accidentally leaking secrets like API keys, tokens, or
     credentials to MCP server subprocesses.  Secret-source-injected vars are
-    an exception: users configured that backend specifically so Hermes and
+    an exception: users configured that backend specifically so Norual and
     its subprocesses can consume those credentials without duplicating them
     in every MCP server's ``env:`` block.
     """
@@ -1044,7 +1044,7 @@ def _resolve_stdio_command(command: str, env: dict) -> tuple[str, dict]:
                 os.path.join(os.path.expanduser("~"), ".local", "bin", resolved_command),
                 # /usr/local/bin is the canonical install location for Node on
                 # Linux from-source builds, the upstream node:bookworm-slim
-                # image (which the Hermes Docker image copies node + npm +
+                # image (which the Norual Docker image copies node + npm +
                 # corepack from since #4977), and macOS Homebrew on Intel.
                 # Without this candidate, any MCP server configured with an
                 # env.PATH that omits /usr/local/bin (a common pattern when
@@ -1095,7 +1095,7 @@ def _wrap_command_with_watchdog(command: str, args: list) -> tuple[str, list]:
 
 
 # ---------------------------------------------------------------------------
-# MCP ImageContent block → Hermes MEDIA tag
+# MCP ImageContent block → Norual MEDIA tag
 # ---------------------------------------------------------------------------
 
 
@@ -1143,7 +1143,7 @@ def _mcp_image_extension_for_mime_type(mime_type: str) -> str:
 
 def _cache_mcp_image_block(block) -> str:
     """Cache an MCP ``ImageContent`` block to the shared image cache and
-    return a ``MEDIA:<path>`` tag that Hermes gateways know how to render.
+    return a ``MEDIA:<path>`` tag that Norual gateways know how to render.
 
     Returns an empty string when *block* is not an image, when the base64
     payload is malformed, or when the cache helper rejects the bytes (e.g.
@@ -1278,7 +1278,7 @@ def _render_mcp_resource_block(block, server_name: str = "") -> str:
 
     - ``EmbeddedResource`` with text contents → the text itself.
     - ``EmbeddedResource`` with blob contents → bytes are decoded (size-capped)
-      and materialized into the Hermes document cache; returns a marker with
+      and materialized into the Norual document cache; returns a marker with
       the local path so file/terminal tools can consume it.
     - ``ResourceLink`` → the URI plus a pointer at the server's read_resource
       tool. No network fetch happens here; the link is only readable through
@@ -1594,7 +1594,7 @@ def _resolve_identity_header(server_name: str, config: dict):
     Returns a ``(header_name, header_value)`` tuple, or ``None`` when the
     key is unset or invalid. Invalid configs warn and are ignored — an
     identity header must never break the server connection. ``profile``
-    mode resolves the value to the active Hermes profile name once at
+    mode resolves the value to the active Norual profile name once at
     connect time; there is no per-call mutation.
     """
     raw = config.get("identity_header")
@@ -2208,7 +2208,7 @@ class ElicitationHandler:
 
     Elicitation lets a server ask the client to collect structured input from
     the user mid-tool-call (e.g. payment authorization, OAuth confirmation).
-    Form-mode elicitations are routed through Hermes' existing approval
+    Form-mode elicitations are routed through Norual' existing approval
     system (``tools.approval.prompt_dangerous_approval``), which surfaces
     the prompt on whichever surface the active session uses -- CLI, TUI,
     Telegram, Slack, etc. URL-mode elicitations are declined as unsupported.
@@ -2669,7 +2669,7 @@ class MCPServerTask:
         """Build a ``logging_callback`` for ``ClientSession``.
 
         Routes MCP ``notifications/message`` log notifications from the
-        server into Hermes' logging (agent.log via hermes_logging), tagged
+        server into Norual' logging (agent.log via hermes_logging), tagged
         with the server name.  Without this, the SDK's default callback
         silently discards them, so server-side warnings/errors during a
         tool call were invisible.  Port of anomalyco/opencode#34529.
@@ -3181,7 +3181,7 @@ class MCPServerTask:
         if not _ensure_mcp_sdk():
             raise ImportError(
                 f"MCP server '{self.name}' requires the 'mcp' Python SDK, but "
-                "it is not installed. Run `hermes setup` to install MCP support, "
+                "it is not installed. Run `norual setup` to install MCP support, "
                 "then retry."
             )
 
@@ -3224,7 +3224,7 @@ class MCPServerTask:
             )
 
         # Wrap the real command in a parent-death watchdog supervisor so an
-        # ungraceful exit of this Hermes process (kill -9, crash, force-quit)
+        # ungraceful exit of this Norual process (kill -9, crash, force-quit)
         # can't leave the stdio MCP child (and its own descendants, e.g.
         # mcp-remote's spawned `node`) running forever. On a clean exit,
         # MCPServerTask.shutdown() / _kill_orphaned_mcp_children() still do
@@ -3925,7 +3925,7 @@ class MCPServerTask:
         # Set up elicitation handler if enabled and SDK types are available.
         # Servers use elicitation/create to ask the client for structured
         # input mid-tool-call (e.g. payment authorization). The handler
-        # routes those requests through Hermes' approval system.
+        # routes those requests through Norual' approval system.
         elicitation_config = config.get("elicitation", {})
         if elicitation_config.get("enabled", True) and _MCP_ELICITATION_TYPES:
             self._elicitation = ElicitationHandler(self.name, elicitation_config, owner=self)
@@ -4090,7 +4090,7 @@ class MCPServerTask:
                 # CancelledError inherits from BaseException (not Exception)
                 # in Python 3.11+, so the broad ``except Exception`` below
                 # would NOT catch it; we'd silently exit the reconnect loop
-                # and the MCP server would stay dead until Hermes is fully
+                # and the MCP server would stay dead until Norual is fully
                 # restarted. Re-raise so the task's cancellation propagates
                 # correctly to asyncio's task machinery and ``shutdown()``'s
                 # ``await self._task`` completes. See #9930.
@@ -4130,14 +4130,14 @@ class MCPServerTask:
                         # listener on ``_reconnect_event`` — so a 401 on the
                         # very first connect left the server unrevivable for
                         # the life of the process, even after the user
-                        # re-authenticated with ``hermes mcp login``. Parking
+                        # re-authenticated with ``norual mcp login``. Parking
                         # keeps the task alive so the 300s self-probe (and an
                         # explicit /mcp refresh) can pick up fresh tokens.
                         if _is_auth_error(root):
                             logger.warning(
                                 "MCP server '%s' failed initial authentication, "
                                 "parking until credentials change; re-authenticate "
-                                "with `hermes mcp login %s` "
+                                "with `norual mcp login %s` "
                                 "(state: connecting → parked): %s: %s",
                                 self.name, self.name,
                                 type(root).__name__, root,
@@ -4835,7 +4835,7 @@ def _http_status_error_types() -> tuple:
     """``HTTPStatusError`` classes that can reach us, from both httpx flavours.
 
     A 401 can be raised either by the MCP SDK's own HTTP stack (``httpx2`` on
-    mcp >= 2.0) or by Hermes' pinned ``httpx``, and the two define unrelated
+    mcp >= 2.0) or by Norual' pinned ``httpx``, and the two define unrelated
     exception classes. Both go in the tuple so ``isinstance`` covers whichever
     layer raised.
     """
@@ -5006,7 +5006,7 @@ def _handle_auth_error_and_retry(
     _bump_server_error(server_name)
     return tool_error(
         f"MCP server '{server_name}' requires re-authentication. "
-        f"Run `hermes mcp login {server_name}` (or delete the tokens "
+        f"Run `norual mcp login {server_name}` (or delete the tokens "
         f"file under ~/.hermes/mcp-tokens/ and restart). Do NOT retry "
         f"this tool — ask the user to re-authenticate.",
         needs_reauth=True,
@@ -5218,7 +5218,7 @@ _lock = threading.Lock()
 # ---------------------------------------------------------------------------
 # Cross-process MCP discovery guard
 # ---------------------------------------------------------------------------
-# Advisory file lock that prevents N concurrent Hermes processes (e.g.
+# Advisory file lock that prevents N concurrent Norual processes (e.g.
 # gateway + CLI + TUI) from all running MCP discovery simultaneously.
 # See issue #62771.
 _LOCK_UNAVAILABLE: Any = object()  # sentinel: locking broken/unavailable
@@ -5719,7 +5719,7 @@ def _filter_suspicious_mcp_servers(servers: Dict[str, dict]) -> Dict[str, dict]:
 
 
 def _load_mcp_config() -> Dict[str, dict]:
-    """Read ``mcp_servers`` from the Hermes config file.
+    """Read ``mcp_servers`` from the Norual config file.
 
     Returns a dict of ``{server_name: server_config}`` or empty dict.
     Server config can contain either ``command``/``args``/``env`` for stdio
@@ -6208,13 +6208,13 @@ def _make_tool_handler(server_name: str, tool_name: str, tool_timeout: float):
             # Collect text from content blocks. MCP tool results can also
             # include ImageContent blocks (screenshot / Blockbench / Playwright
             # etc.); cache those via the gateway's image-cache helper so they
-            # flow through Hermes' MEDIA: tag convention and out to messaging
+            # flow through Norual' MEDIA: tag convention and out to messaging
             # adapters that render images natively. Without this, image blocks
             # were silently dropped and the agent got an empty response.
             #
             # Distilled from #17915 (c3115644151) and #10848 (gnanirahulnutakki),
             # both too stale to cherry-pick. #10848's approach (integrate with
-            # Hermes' MEDIA tag + cache_image_from_bytes) was the cleaner of
+            # Norual' MEDIA tag + cache_image_from_bytes) was the cleaner of
             # the two — plugs into existing infrastructure.
             parts: List[str] = []
             for block in (result.content or []):
@@ -6783,7 +6783,7 @@ def _normalize_mcp_input_schema(schema: dict | None) -> dict:
 def sanitize_mcp_name_component(value: str) -> str:
     """Return an MCP name component safe for tool and prefix generation.
 
-    Preserves Hermes's historical behavior of converting hyphens to
+    Preserves Norual's historical behavior of converting hyphens to
     underscores, and also replaces any other character outside
     ``[A-Za-z0-9_]`` with ``_`` so generated tool names are compatible with
     provider validation rules.
@@ -6791,7 +6791,7 @@ def sanitize_mcp_name_component(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_]", "_", str(value or ""))
 
 
-# Native MCP tool-name prefix. Hermes uses the ``mcp__<server>__<tool>``
+# Native MCP tool-name prefix. Norual uses the ``mcp__<server>__<tool>``
 # convention shared by Claude Code, Codex, and OpenCode (anomalyco/opencode
 # #33533). The double-underscore delimiter disambiguates the server/tool
 # boundary even when either component contains underscores, and matches the
@@ -6813,7 +6813,7 @@ def mcp_prefixed_tool_name(server_name: str, tool_name: str) -> str:
 
 
 def _convert_mcp_schema(server_name: str, mcp_tool) -> dict:
-    """Convert an MCP tool listing to the Hermes registry schema format.
+    """Convert an MCP tool listing to the Norual registry schema format.
 
     Args:
         server_name: The logical server name for prefixing.
@@ -7979,9 +7979,9 @@ def get_mcp_status() -> List[dict]:
 def probe_mcp_server_tools() -> Dict[str, List[tuple]]:
     """Temporarily connect to configured MCP servers and list their tools.
 
-    Designed for ``hermes tools`` interactive configuration — connects to each
+    Designed for ``norual tools`` interactive configuration — connects to each
     enabled server, grabs tool names and descriptions, then disconnects.
-    Does NOT register tools in the Hermes registry.
+    Does NOT register tools in the Norual registry.
 
     Returns:
         Dict mapping server name to list of (tool_name, description) tuples.

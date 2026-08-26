@@ -1,7 +1,7 @@
 """Stable macOS TCC anchor for the uv-managed Python interpreter (issue #85345).
 
 macOS keys TCC grants (Files & Folders, Photos, Media Library, Automation,
-...) to the *resolved absolute path* of the client binary.  Hermes' interpreter
+...) to the *resolved absolute path* of the client binary.  Norual' interpreter
 is managed by uv and lives at ``~/.local/share/uv/python/cpython-<ver>-macos-*/
 bin/python*``; every patch bump materializes a NEW versioned directory, so the
 TCC client string changes and every prior grant is orphaned — macOS re-prompts
@@ -13,12 +13,12 @@ client is reported as ``.../cpython-3.11.15-macos-.../bin/python3.11``).
 
 The anchor: replace the venv's ``bin/python`` symlink with a *real-file copy*
 of the interpreter binary.  The venv path (``<checkout>/venv/bin/python``) is
-stable across ``hermes update``, and because it is a regular file there is no
+stable across ``norual update``, and because it is a regular file there is no
 symlink for TCC to resolve — so the TCC client path stays constant across
 interpreter patch bumps.  ``pyvenv.cfg`` keeps pointing at the uv store (``home``),
 which still provides the stdlib exactly as it does today.
 
-The anchor self-heals: when ``hermes update`` / ``hermes doctor`` runs and the
+The anchor self-heals: when ``norual update`` / ``norual doctor`` runs and the
 venv python is a symlink again (uv re-created it) or the recorded source no
 longer matches the current interpreter (patch bump), the copy is refreshed.
 Versioned alias symlinks (``python3``, ``python3.11``, ...) inside the venv bin
@@ -278,7 +278,7 @@ def ensure_tcc_anchor(project_root: Path | None = None) -> Path | None:
 
 
 def tcc_anchor_state(project_root: Path | None = None) -> tuple[str, str]:
-    """Report the anchor state for ``hermes doctor``.
+    """Report the anchor state for ``norual doctor``.
 
     Returns ``(status, detail)`` with status one of:
 

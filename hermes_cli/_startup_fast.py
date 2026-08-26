@@ -181,14 +181,14 @@ def read_install_method() -> str | None:
 
 
 def print_fast_version_info(*, check_updates: bool = True) -> None:
-    """THE canonical ``hermes --version`` output (also used by /version).
+    """THE canonical ``norual --version`` output (also used by /version).
 
     The static lines print instantly from stdlib-only probes; everything
     heavier (upstream SHA in the version line, authoritative install-method
     detection, the update-status check) is lazy-imported AFTER the first
     line is already on screen, so perceived latency stays instant while the
     output carries the full information that used to require the (removed)
-    ``hermes version`` subcommand. Every lazy block degrades gracefully —
+    ``norual version`` subcommand. Every lazy block degrades gracefully —
     a broken/heavy import can never take the basic version output down.
     """
     # Line 1: registry-owned banner label (includes "· upstream <sha>" for
@@ -251,7 +251,7 @@ def print_fast_version_info(*, check_updates: bool = True) -> None:
 
 
 def try_fast_version(argv: list[str] | None = None) -> bool:
-    """Handle ``hermes --version`` before the heavy import wall.
+    """Handle ``norual --version`` before the heavy import wall.
 
     Only ``--version``/``-V`` (the ``version`` subcommand was removed —
     ``--version`` now carries the full output incl. update status), and

@@ -75,9 +75,9 @@ def _exhaust_budget(session_id: str, goal_text: str = "ship the benchmark"):
 
 
 def _make_cli(session_id: str):
-    from cli import HermesCLI
+    from cli import NorualCLI
 
-    cli = HermesCLI.__new__(HermesCLI)
+    cli = NorualCLI.__new__(NorualCLI)
     cli._pending_input = queue.Queue()
     cli.session_id = session_id
     cli.agent = MagicMock()

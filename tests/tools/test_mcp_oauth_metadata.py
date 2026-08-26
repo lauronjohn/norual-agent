@@ -1,9 +1,9 @@
 """Tests for OAuth server metadata persistence across process restarts.
 
 Covers:
-- :class:`HermesTokenStorage` ``.meta.json`` roundtrip (save / load / remove)
+- :class:`NorualTokenStorage` ``.meta.json`` roundtrip (save / load / remove)
 - The production manager provider
-  (:class:`tools.mcp_oauth_manager.HermesMCPOAuthProvider`) restoring metadata
+  (:class:`tools.mcp_oauth_manager.NorualMCPOAuthProvider`) restoring metadata
   on cold-load init and persisting metadata at the end of ``async_auth_flow``.
 
 Context
@@ -26,7 +26,7 @@ import pytest
 
 from mcp.shared.auth import OAuthMetadata
 
-from tools.mcp_oauth import HermesTokenStorage
+from tools.mcp_oauth import NorualTokenStorage
 from tools.mcp_oauth_manager import _HERMES_PROVIDER_CLS
 
 
@@ -42,14 +42,14 @@ def _make_metadata(token_endpoint: str = "https://auth.example.com/oauth/token")
 
 
 # ---------------------------------------------------------------------------
-# HermesTokenStorage metadata roundtrip
+# NorualTokenStorage metadata roundtrip
 # ---------------------------------------------------------------------------
 
 
 class TestMetadataStorage:
     def test_save_and_load_roundtrip(self, tmp_path, monkeypatch):
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        storage = HermesTokenStorage("example-server")
+        storage = NorualTokenStorage("example-server")
 
         meta = _make_metadata()
         storage.save_oauth_metadata(meta)
@@ -65,7 +65,7 @@ class TestMetadataStorage:
 
     def test_remove_deletes_meta_file(self, tmp_path, monkeypatch):
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        storage = HermesTokenStorage("cleanup-server")
+        storage = NorualTokenStorage("cleanup-server")
 
         storage.save_oauth_metadata(_make_metadata())
         assert storage._meta_path().exists()
@@ -75,11 +75,11 @@ class TestMetadataStorage:
 
 
 # ---------------------------------------------------------------------------
-# Manager-path provider (HermesMCPOAuthProvider) — production code path
+# Manager-path provider (NorualMCPOAuthProvider) — production code path
 # ---------------------------------------------------------------------------
 
 
-def _manager_provider_with_context(storage: HermesTokenStorage, **context_attrs):
+def _manager_provider_with_context(storage: NorualTokenStorage, **context_attrs):
     """Build an uninitialized manager provider with a mocked context.
 
     Bypasses the full OAuthClientProvider init so we can exercise the
@@ -103,7 +103,7 @@ class TestManagerOAuthProviderMetadata:
     def test_initialize_restores_metadata_from_disk(self, tmp_path, monkeypatch):
         """Cold-load: if we have no in-memory metadata but disk has some, restore it."""
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        storage = HermesTokenStorage("mgr-srv")
+        storage = NorualTokenStorage("mgr-srv")
         storage.save_oauth_metadata(_make_metadata("https://mgr.example.com/token"))
         provider = _manager_provider_with_context(storage, oauth_metadata=None)
 
@@ -120,7 +120,7 @@ class TestManagerOAuthProviderMetadata:
     def test_async_auth_flow_persists_on_completion(self, tmp_path, monkeypatch):
         """End-to-end: running the wrapped auth_flow persists discovered metadata."""
         monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-        storage = HermesTokenStorage("flow-srv")
+        storage = NorualTokenStorage("flow-srv")
         provider = _manager_provider_with_context(
             storage,
             oauth_metadata=_make_metadata("https://flow.example.com/token"),

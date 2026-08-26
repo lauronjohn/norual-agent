@@ -1,6 +1,6 @@
 """Tests for /save — the conversation snapshot slash command.
 
-Regression: the old implementation wrote ``hermes_conversation_<ts>.json``
+Regression: the old implementation wrote ``norual_conversation_<ts>.json``
 to the current working directory (CWD). Users who ran /save expected the
 file to be discoverable via ``hermes sessions browse``, but CWD-resident
 snapshots are not indexed in the state DB and are generally invisible.
@@ -61,16 +61,16 @@ def test_save_conversation_writes_under_hermes_home(hermes_home, tmp_path, monke
     ])
 
     # Call the unbound method against our stub.
-    cli.HermesCLI.save_conversation(stub, "/save json")
+    cli.NorualCLI.save_conversation(stub, "/save json")
 
     # File must NOT be in CWD
-    cwd_leak = list(work.glob("hermes_conversation_*.json"))
+    cwd_leak = list(work.glob("norual_conversation_*.json"))
     assert not cwd_leak, f"snapshot leaked to CWD: {cwd_leak}"
 
     # File MUST be under ~/.hermes/sessions/saved/
     saved_dir = hermes_home / "sessions" / "saved"
     assert saved_dir.is_dir(), "expected saved/ subdirectory to be created"
-    files = list(saved_dir.glob("hermes_conversation_*.json"))
+    files = list(saved_dir.glob("norual_conversation_*.json"))
     assert len(files) == 1, files
 
     payload = json.loads(files[0].read_text())
@@ -86,7 +86,7 @@ def test_save_conversation_writes_under_hermes_home(hermes_home, tmp_path, monke
     # User-facing message must include the absolute path AND the resume hint.
     out = capsys.readouterr().out
     assert str(files[0]) in out, out
-    assert "hermes --resume 20260101_120000_abc123" in out, out
+    assert "norual --resume 20260101_120000_abc123" in out, out
 
 
 def test_save_conversation_empty_history_does_nothing(hermes_home, capsys):
@@ -95,7 +95,7 @@ def test_save_conversation_empty_history_does_nothing(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([])
-    cli.HermesCLI.save_conversation(stub, "/save json")
+    cli.NorualCLI.save_conversation(stub, "/save json")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())
@@ -110,7 +110,7 @@ def test_save_conversation_bare_shows_usage(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([{"role": "user", "content": "hi"}])
-    cli.HermesCLI.save_conversation(stub, "/save")
+    cli.NorualCLI.save_conversation(stub, "/save")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())
@@ -126,7 +126,7 @@ def test_save_conversation_bad_format_shows_usage(hermes_home, capsys):
     import cli
 
     stub = _make_stub_cli([{"role": "user", "content": "hi"}])
-    cli.HermesCLI.save_conversation(stub, "/save pdf")
+    cli.NorualCLI.save_conversation(stub, "/save pdf")
 
     saved_dir = hermes_home / "sessions" / "saved"
     assert not saved_dir.exists() or not list(saved_dir.iterdir())

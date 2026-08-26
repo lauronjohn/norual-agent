@@ -1,5 +1,5 @@
 """
-Top-level argparse construction for the hermes CLI.
+Top-level argparse construction for the norual CLI.
 
 Lives in its own module so other modules (e.g. ``relaunch.py``) can
 introspect the parser to discover which flags exist without running the
@@ -67,7 +67,7 @@ def top_level_value_flag_sets() -> tuple[frozenset[str], frozenset[str]]:
     Introspects ``build_top_level_parser()`` (every option with nargs != 0)
     so the argv scanners in ``main.py`` (``_first_positional_argv``,
     ``_apply_profile_override``) can never drift from the argparse surface —
-    the exact drift that made ``hermes --reasoning high chat …`` misread
+    the exact drift that made ``norual --reasoning high chat …`` misread
     ``high`` as the subcommand and forced eager plugin discovery (#93530).
     Mirrors the ``update_cmd._holder_value_flags`` precedent, including the
     handwritten-snapshot fallback for a broken parser import. Cached per
@@ -103,48 +103,48 @@ def _inherited_flag(parser, *args, **kwargs):
 
 _EPILOGUE = """
 Examples:
-    hermes                        Start interactive chat
-    hermes chat -q "Hello"        Single query mode
-    hermes --tui                  Launch the modern TUI (or set display.interface: tui)
-    hermes --cli                  Force the classic REPL (overrides display.interface: tui)
-    hermes -c                     Resume the most recent session
-    hermes -c "my project"        Resume a session by name (latest in lineage)
-    hermes --resume <session_id>  Resume a specific session by ID
-    hermes --resume latest        Resume the most recent session (same as -c)
-    hermes --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
-    hermes setup                  Run setup wizard
-    hermes logout                 Clear stored authentication
-    hermes auth add <provider>    Add a pooled credential
-    hermes auth list              List pooled credentials
-    hermes auth remove <p> <t>    Remove pooled credential by index, id, or label
-    hermes auth reset <provider>  Clear exhaustion status for a provider
-    hermes model                  Select default model
-    hermes fallback [list]        Show fallback provider chain
-    hermes fallback add           Add a fallback provider (same picker as `hermes model`)
-    hermes fallback remove        Remove a fallback provider from the chain
-    hermes config                 View configuration
-    hermes config edit            Edit config in $EDITOR
-    hermes config set model gpt-4 Set a config value
-    hermes gateway                Run messaging gateway
-    hermes -s hermes-agent-dev,github-auth
-    hermes -w                     Start in isolated git worktree
-    hermes gateway install        Install gateway background service
-    hermes sessions list          List past sessions
-    hermes sessions browse        Interactive session picker
-    hermes sessions rename ID T   Rename/title a session
-    hermes logs                   View agent.log (last 50 lines)
-    hermes logs -f                Follow agent.log in real time
-    hermes logs errors            View errors.log
-    hermes logs --since 1h        Lines from the last hour
-    hermes debug share             Upload debug report for support
-    hermes console                Open the safe Hermes command console
-    hermes update                 Update to latest version
-    hermes dashboard              Start web UI dashboard (port 9119)
-    hermes dashboard --stop       Stop running dashboard processes
-    hermes dashboard --status     List running dashboard processes
+    norual                        Start interactive chat
+    norual chat -q "Hello"        Single query mode
+    norual --tui                  Launch the modern TUI (or set display.interface: tui)
+    norual --cli                  Force the classic REPL (overrides display.interface: tui)
+    norual -c                     Resume the most recent session
+    norual -c "my project"        Resume a session by name (latest in lineage)
+    norual --resume <session_id>  Resume a specific session by ID
+    norual --resume latest        Resume the most recent session (same as -c)
+    norual --tui --resume latest --in ./dir   Resume ./dir's latest session in the TUI
+    norual setup                  Run setup wizard
+    norual logout                 Clear stored authentication
+    norual auth add <provider>    Add a pooled credential
+    norual auth list              List pooled credentials
+    norual auth remove <p> <t>    Remove pooled credential by index, id, or label
+    norual auth reset <provider>  Clear exhaustion status for a provider
+    norual model                  Select default model
+    norual fallback [list]        Show fallback provider chain
+    norual fallback add           Add a fallback provider (same picker as `norual model`)
+    norual fallback remove        Remove a fallback provider from the chain
+    norual config                 View configuration
+    norual config edit            Edit config in $EDITOR
+    norual config set model gpt-4 Set a config value
+    norual gateway                Run messaging gateway
+    norual -s hermes-agent-dev,github-auth
+    norual -w                     Start in isolated git worktree
+    norual gateway install        Install gateway background service
+    norual sessions list          List past sessions
+    norual sessions browse        Interactive session picker
+    norual sessions rename ID T   Rename/title a session
+    norual logs                   View agent.log (last 50 lines)
+    norual logs -f                Follow agent.log in real time
+    norual logs errors            View errors.log
+    norual logs --since 1h        Lines from the last hour
+    norual debug share             Upload debug report for support
+    norual console                Open the safe Norual command console
+    norual update                 Update to latest version
+    norual dashboard              Start web UI dashboard (port 9119)
+    norual dashboard --stop       Stop running dashboard processes
+    norual dashboard --status     List running dashboard processes
 
 For more help on a command:
-    hermes <command> --help
+    norual <command> --help
 """
 
 
@@ -192,7 +192,7 @@ def build_top_level_parser():
     # --model / --provider are accepted at the top level so they can pair
     # with -z without needing the `chat` subcommand.  If neither -z nor a
     # subcommand consumes them, they fall through harmlessly as None.
-    # Mirrors `hermes chat --model ... --provider ...` semantics.
+    # Mirrors `norual chat --model ... --provider ...` semantics.
     _inherited_flag(
         parser,
         "-m",
@@ -210,7 +210,7 @@ def build_top_level_parser():
         help=(
             "Provider override for this invocation (e.g. openrouter, anthropic). "
             "Applies to -z/--oneshot and --tui. The persistent provider lives in config.yaml "
-            "under model.provider — use `hermes setup` or edit the file to change it."
+            "under model.provider — use `norual setup` or edit the file to change it."
         ),
     )
     _inherited_flag(
@@ -362,7 +362,7 @@ def build_top_level_parser():
     chat_parser = subparsers.add_parser(
         "chat",
         help="Interactive chat with the agent",
-        description="Start an interactive chat session with Hermes Agent",
+        description="Start an interactive chat session with Norual Agent",
     )
     _query_group = chat_parser.add_mutually_exclusive_group()
     _query_group.add_argument(
@@ -382,7 +382,7 @@ def build_top_level_parser():
         "--image", help="Optional local image path to attach to a single query"
     )
     # `default=argparse.SUPPRESS` on flags that are ALSO declared on the
-    # top-level parser: when the user writes `hermes -m foo chat`, argparse
+    # top-level parser: when the user writes `norual -m foo chat`, argparse
     # first sets `args.model = "foo"` from the top-level parser, then
     # dispatches to the chat subparser. Without SUPPRESS the chat subparser's
     # own default (`None`) would silently clobber the top-level value because
@@ -571,7 +571,7 @@ def build_top_level_parser():
         "--safe-mode",
         action="store_true",
         default=argparse.SUPPRESS,
-        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Hermes itself.",
+        help="Troubleshooting mode: disable ALL customizations — user config, AGENTS.md/memory injection, plugins, and MCP servers (implies --ignore-user-config and --ignore-rules). Use to isolate whether a problem comes from your setup or from Norual itself.",
     )
     chat_parser.add_argument(
         "--source",

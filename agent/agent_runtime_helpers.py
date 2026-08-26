@@ -1980,7 +1980,7 @@ def dump_api_request_debug(
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         # Sanitize the session ID into a traversal-free path segment — it can
-        # originate from untrusted input (X-Hermes-Session-Id header), and an
+        # originate from untrusted input (X-Norual-Session-Id header), and an
         # unsanitized "../"-shaped ID would write the dump outside logs_dir.
         safe_sid = _ra()._safe_session_filename_component(agent.session_id)
         dump_file = agent.logs_dir / f"request_dump_{safe_sid}_{timestamp}.json"
@@ -2342,7 +2342,7 @@ def anthropic_prompt_cache_policy(
     )
 
     # A configured route may use an arbitrary provider name and model alias
-    # that are canonicalized only after Hermes sends the request. Honor its
+    # that are canonicalized only after Norual sends the request. Honor its
     # existing per-model ``prompt_caching`` capability instead of guessing
     # support from either spelling. Explicit false is authoritative too.
     #
@@ -2701,7 +2701,7 @@ def create_openai_client(agent, client_kwargs: dict, *, reason: str, shared: boo
         _existing.update(opencode_zen_free_headers())
         client_kwargs["default_headers"] = _existing
 
-    # All primary construction and recovery paths must identify Hermes to the
+    # All primary construction and recovery paths must identify Norual to the
     # official Codex endpoint, including snapshots with custom header overrides.
     from agent.auxiliary_client import _apply_required_codex_headers
 
@@ -4227,7 +4227,7 @@ def reapply_reasoning_echo_for_provider(agent, api_messages: list) -> int:
 def _iter_httpx_pool_objects(http_client: Any):
     """Yield httpcore pool objects reachable from an httpx client.
 
-    Hermes' keepalive client (#10324 / ``_build_keepalive_http_client``) and
+    Norual' keepalive client (#10324 / ``_build_keepalive_http_client``) and
     any ``HTTP(S)_PROXY`` configuration put live connections on *mounted*
     transports (``client._mounts``), not only on the default
     ``client._transport``. Walking the default transport alone makes

@@ -64,7 +64,7 @@ def validate_copilot_token(token: str) -> tuple[bool, str]:
         return False, (
             "Classic Personal Access Tokens (ghp_*) are not supported by the "
             "Copilot API. Use one of:\n"
-            "  → `copilot login` or `hermes model` to authenticate via OAuth\n"
+            "  → `copilot login` or `norual model` to authenticate via OAuth\n"
             "  → A fine-grained PAT (github_pat_*) with Copilot Requests permission\n"
             "  → `gh auth login` with the default device code flow (produces gho_* tokens)"
         )
@@ -146,7 +146,7 @@ def _gh_cli_candidates() -> list[str]:
 # gh has no credential store for this HOME (fresh profile, desktop-spawned
 # backend, CI) it can block for its full 5s subprocess timeout — on keyring /
 # D-Bus prompts rather than returning immediately. Provider inventory builds
-# (``/api/model/options``, ``hermes tools``) probe Copilot auth several times
+# (``/api/model/options``, ``norual tools``) probe Copilot auth several times
 # per request, so an uncached miss turns one settings-page load into a 4×5s
 # stall that exceeds the Desktop renderer's 15s IPC budget and paints an error
 # (observed Aug 2026: Models/Providers settings pages timing out on every
@@ -254,7 +254,7 @@ def copilot_device_code_login(
         headers={
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "HermesAgent/1.0",
+            "User-Agent": "NorualAgent/1.0",
         },
     )
 
@@ -300,7 +300,7 @@ def copilot_device_code_login(
             headers={
                 "Accept": "application/json",
                 "Content-Type": "application/x-www-form-urlencoded",
-                "User-Agent": "HermesAgent/1.0",
+                "User-Agent": "NorualAgent/1.0",
             },
         )
 
@@ -725,7 +725,7 @@ def copilot_request_headers(
     """
     headers: dict[str, str] = {
         "Editor-Version": "vscode/1.104.1",
-        "User-Agent": "HermesAgent/1.0",
+        "User-Agent": "NorualAgent/1.0",
         "Copilot-Integration-Id": "vscode-chat",
         "Openai-Intent": "conversation-edits",
         "x-initiator": "agent" if is_agent_turn else "user",

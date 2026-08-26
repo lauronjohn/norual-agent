@@ -1,11 +1,11 @@
 """Bot Mode agent-to-agent DM tool — ``message_agent``.
 
 A structured, Bot-Chat-only tool that lets a Bot Mode agent message a
-teammate agent (another Hermes profile on this install, or an agent on a
+teammate agent (another Norual profile on this install, or an agent on a
 registered peer gateway) WITHOUT hand-assembling shell commands.
 
 Why this exists (Aug 2026): the Bot Mode teammate protocol taught agents to
-DM each other via a prompt-injected ``hermes -p <bot> chat ...`` shellout.
+DM each other via a prompt-injected ``norual -p <bot> chat ...`` shellout.
 That transport works, but the *invocation* was fragile — quoting traps
 (#91339/#91304), temp-file choreography, dead-profile races — and the
 Desktop's remote-mention path forwarded raw user text verbatim (#91397).
@@ -26,12 +26,12 @@ Containment contract (MUST hold — reviewers check all three):
   forged call from a session that shouldn't have the tool returns a
   structured error instead of delivering.
 - Everything here is additive. The legacy protocol transports
-  (``hermes -p`` / ``hermes peer dm``) keep working for older prompts.
+  (``norual -p`` / ``norual peer dm``) keep working for older prompts.
 
 The transports themselves are unchanged and proven:
-- local teammate  → ``hermes -p <name> chat --in ~ -c "Bot Chat"
+- local teammate  → ``norual -p <name> chat --in ~ -c "Bot Chat"
   --create-if-missing -Q --query-file <tmp>`` (one turn, reply on stdout)
-- peer teammate   → ``hermes peer dm <peer>[/<name>] < <tmp>``
+- peer teammate   → ``norual peer dm <peer>[/<name>] < <tmp>``
 
 Both run through ``terminal_tool(background=True, notify_on_complete=True)``
 so the reply lands as a completion notification on the sender's NEXT turn —
@@ -521,14 +521,14 @@ def _unlink_dm_file(path: str) -> None:
 def _delivery_lock(argv: list[str], *, stdin_file: bool):
     """Per-profile turn lock context for a LOCAL teammate delivery (#93091).
 
-    Local deliveries (``hermes -p <profile> chat …``) collide with relay
+    Local deliveries (``norual -p <profile> chat …``) collide with relay
     deliveries into the same profile — both run a Bot Chat turn on this
     install — so the turn window is serialized on the shared cross-process
     lock in ``tools.bot_relay``. Peer transports (stdin mode) run on the
     remote gateway; their turn is locked THERE by its own deliver path.
     """
     # The CLI element is matched by basename: local_delivery_command now
-    # resolves the venv-relative hermes next to this gateway's interpreter
+    # resolves the venv-relative norual next to this gateway's interpreter
     # (#93590 — service contexts lack PATH), so argv[0] may be an absolute
     # path (and on Windows carries the .exe suffix). Split on both
     # separators so the shape matches regardless of which platform built

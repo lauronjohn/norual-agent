@@ -1,6 +1,6 @@
 """Runtime inventory + update plan for the fleet-update pipeline (#91277 Phase 2).
 
-One read-only pass that answers, BEFORE any mutation: what Hermes runtimes
+One read-only pass that answers, BEFORE any mutation: what Norual runtimes
 are running on this machine, how is each one deployed, which of them will
 this update touch, and how will each be restarted?
 
@@ -11,13 +11,13 @@ This is the "plan" phase of the transactional deployment model (#88683):
 The module is deliberately side-effect free — every collector is a probe
 over primitives that already exist (`find_profile_gateway_processes`,
 `_get_service_pids`, `gateway_state.json` code stamps from #91283,
-`detect_install_method`) — so `hermes update --plan` can run on a live
+`detect_install_method`) — so `norual update --plan` can run on a live
 fleet with zero risk, and the update receipt can embed the inventory
 without changing update behavior.
 
 Deployment kinds (the concept most fleet-update bugs were missing):
 
-    git      — source checkout; updatable in place via `hermes update`
+    git      — source checkout; updatable in place via `norual update`
     docker   — published image; NOT updatable in place (pull + recreate)
     nix/apt  — package-manager owned; updatable via the manager only
     unknown  — no marker; treated as in-place updatable (legacy default)
@@ -25,7 +25,7 @@ Deployment kinds (the concept most fleet-update bugs were missing):
 Supervisors (how a runtime is restarted after code changes):
 
     systemd / launchd — restart via the service manager (fleet-wide)
-    desktop           — Desktop app supervises `hermes serve`; it respawns
+    desktop           — Desktop app supervises `norual serve`; it respawns
     manual            — plain process; SIGTERM + watcher/manual relaunch
 """
 
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RuntimeRecord:
-    """One running (or expected) Hermes runtime on this machine."""
+    """One running (or expected) Norual runtime on this machine."""
 
     kind: str                     # gateway | dashboard | serve
     profile: str                  # profile name ("default", ...)
@@ -63,7 +63,7 @@ class UpdatePlan:
 
     install_method: str = "unknown"       # git | docker | nix | apt | ...
     updatable_in_place: bool = True
-    update_mechanism: str = "hermes update"
+    update_mechanism: str = "norual update"
     expected_sha: Optional[str] = None    # current checkout HEAD (pre-pull)
     expected_version: Optional[str] = None
     profiles: list = field(default_factory=list)
@@ -121,8 +121,8 @@ def describe_restart_mechanism(mechanism: str, profile: str) -> str:
     if mechanism == "desktop":
         return "Desktop app respawns its serve backend"
     if profile != "default":
-        return f"hermes -p {profile} gateway restart"
-    return "hermes gateway restart"
+        return f"norual -p {profile} gateway restart"
+    return "norual gateway restart"
 
 
 def collect_runtime_inventory() -> UpdatePlan:
@@ -311,7 +311,7 @@ def print_update_plan(plan: UpdatePlan) -> None:
     profiles = ", ".join(plan.profiles) if plan.profiles else "(none found)"
     print(f"  Profiles: {profiles}")
     if not plan.runtimes:
-        print("  Running Hermes services: none detected — code swap only.")
+        print("  Running Norual services: none detected — code swap only.")
         return
     print(f"  Running services to restart ({len(plan.runtimes)}):")
     for runtime in plan.runtimes:
@@ -412,8 +412,8 @@ def report_unaccounted_runtimes(outcomes: list[dict[str, Any]]) -> bool:
             f" — planned mechanism: {o['mechanism']}"
         )
     print("    Restart them manually, then verify:")
-    print("      hermes gateway restart                # active profile")
-    print("      hermes -p <profile> gateway restart   # named profile")
+    print("      norual gateway restart                # active profile")
+    print("      norual -p <profile> gateway restart   # named profile")
     return True
 
 

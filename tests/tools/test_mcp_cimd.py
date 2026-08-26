@@ -29,7 +29,7 @@ pytest.importorskip(
 )
 
 from tools.mcp_oauth import (  # noqa: E402 — after the SDK availability gate
-    HermesTokenStorage,
+    NorualTokenStorage,
     _CIMD_CLIENT_METADATA_URL,
     _CIMD_PORTS,
     _CIMD_REDIRECT_HOSTS,
@@ -166,7 +166,7 @@ def test_generated_redirect_uri_is_registered_in_the_document(tmp_path, monkeypa
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     cfg: dict = {}
 
-    _configure_callback_port(cfg, HermesTokenStorage("srv"))
+    _configure_callback_port(cfg, NorualTokenStorage("srv"))
     if "_cimd_url" not in cfg:
         pytest.skip("every pinned CIMD port is held by another process")
     metadata = _build_client_metadata(cfg)
@@ -184,7 +184,7 @@ def test_generated_redirect_uri_is_registered_in_the_document(tmp_path, monkeypa
 def test_eligible_flow_gets_a_pinned_port(tmp_path, monkeypatch, private_ports):
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
-    result = _maybe_use_cimd({}, HermesTokenStorage("srv"))
+    result = _maybe_use_cimd({}, NorualTokenStorage("srv"))
 
     assert result is not None
     url, port = result
@@ -202,7 +202,7 @@ def test_pinned_port_is_held_until_the_callback_adopts_it(
 
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
-    result = _maybe_use_cimd({}, HermesTokenStorage("srv"))
+    result = _maybe_use_cimd({}, NorualTokenStorage("srv"))
     assert result is not None
     port = result[1]
 
@@ -228,7 +228,7 @@ def test_pinned_socket_survives_the_ephemeral_eviction_cap(
 
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
-    result = _maybe_use_cimd({}, HermesTokenStorage("srv"))
+    result = _maybe_use_cimd({}, NorualTokenStorage("srv"))
     assert result is not None
     pinned = result[1]
 
@@ -253,7 +253,7 @@ def test_concurrent_servers_get_different_pinned_ports(
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     ports = {
-        _maybe_use_cimd({}, HermesTokenStorage(f"srv-{i}"))[1]
+        _maybe_use_cimd({}, NorualTokenStorage(f"srv-{i}"))[1]
         for i in range(len(private_ports))
     }
 
@@ -273,7 +273,7 @@ def test_occupied_port_moves_to_the_next_in_the_range(
         pytest.skip(f"could not occupy port {private_ports[0]}")
 
     try:
-        result = _maybe_use_cimd({}, HermesTokenStorage("srv"))
+        result = _maybe_use_cimd({}, NorualTokenStorage("srv"))
     finally:
         squatter.close()
 
@@ -287,7 +287,7 @@ def test_self_hosted_document_url_overrides_the_default(
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
     cfg = {"client_metadata_url": "https://example.com/my-cimd.json"}
 
-    result = _maybe_use_cimd(cfg, HermesTokenStorage("srv"))
+    result = _maybe_use_cimd(cfg, NorualTokenStorage("srv"))
 
     assert result is not None
     assert result[0] == "https://example.com/my-cimd.json"
@@ -320,7 +320,7 @@ def test_config_that_conflicts_with_the_document_falls_back_to_dcr(
     present."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
-    assert _maybe_use_cimd(dict(cfg), HermesTokenStorage("srv")) is None
+    assert _maybe_use_cimd(dict(cfg), NorualTokenStorage("srv")) is None
 
 
 def test_dashboard_flow_falls_back_to_dcr(tmp_path, monkeypatch, private_ports):
@@ -339,7 +339,7 @@ def test_dashboard_flow_falls_back_to_dcr(tmp_path, monkeypatch, private_ports):
 
     cfg: dict = {}
     with dashboard_oauth_flow(flow):
-        _configure_callback_port(cfg, HermesTokenStorage("srv"))
+        _configure_callback_port(cfg, NorualTokenStorage("srv"))
 
     assert "_cimd_url" not in cfg
     assert cfg["redirect_uri"] == flow.redirect_uri
@@ -349,7 +349,7 @@ def test_existing_registration_falls_back_to_dcr(tmp_path, monkeypatch, private_
     """A stored client_id is bound to the redirect URI it registered with;
     switching to CIMD now would invalidate it."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    storage = HermesTokenStorage("srv")
+    storage = NorualTokenStorage("srv")
     storage._client_info_path().parent.mkdir(parents=True, exist_ok=True)
     storage._client_info_path().write_text('{"client_id": "dcr-issued"}')
 
@@ -373,7 +373,7 @@ def test_exhausted_port_range_falls_back_to_dcr(tmp_path, monkeypatch, private_p
 
     try:
         cfg: dict = {}
-        port = _configure_callback_port(cfg, HermesTokenStorage("srv"))
+        port = _configure_callback_port(cfg, NorualTokenStorage("srv"))
     finally:
         for sock in squatters:
             sock.close()
@@ -392,7 +392,7 @@ def test_more_servers_than_pinned_ports_all_get_cimd(
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     results = [
-        _maybe_use_cimd({}, HermesTokenStorage(f"srv-{i}"))
+        _maybe_use_cimd({}, NorualTokenStorage(f"srv-{i}"))
         for i in range(len(private_ports) + 3)
     ]
 
@@ -429,7 +429,7 @@ def test_cached_metadata_decides_whether_to_pin(
     connection closes that gap, so a known DCR-only server keeps the reserved
     ephemeral port it has always used instead of a guessable fixed one."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    storage = HermesTokenStorage("srv")
+    storage = NorualTokenStorage("srv")
     _cache_server_metadata(storage, supports_cimd=supports_cimd)
 
     cfg: dict = {}
@@ -445,7 +445,7 @@ def test_unknown_server_still_gets_a_document(tmp_path, monkeypatch, private_por
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
 
     cfg: dict = {}
-    _configure_callback_port(cfg, HermesTokenStorage("srv"))
+    _configure_callback_port(cfg, NorualTokenStorage("srv"))
 
     assert cfg["_cimd_url"] == _CIMD_CLIENT_METADATA_URL
 
@@ -457,7 +457,7 @@ def test_cached_pinned_port_is_not_handed_to_a_sibling_server(
     disk. Restoring it must also claim it, or the next server picks the same
     one and the two flows fight over one listener."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    settled = HermesTokenStorage("settled")
+    settled = NorualTokenStorage("settled")
     settled._client_info_path().parent.mkdir(parents=True, exist_ok=True)
     settled._client_info_path().write_text(json.dumps({
         "client_id": _CIMD_CLIENT_METADATA_URL,
@@ -465,7 +465,7 @@ def test_cached_pinned_port_is_not_handed_to_a_sibling_server(
     }))
 
     restored = _configure_callback_port({}, settled)
-    fresh = _maybe_use_cimd({}, HermesTokenStorage("fresh"))
+    fresh = _maybe_use_cimd({}, NorualTokenStorage("fresh"))
 
     assert restored == private_ports[0]
     assert fresh is not None
@@ -611,7 +611,7 @@ def test_rejected_document_stays_rejected_after_a_restart(
     _provider_rejected_at_token_endpoint(
         tmp_path, monkeypatch, _CIMD_CLIENT_METADATA_URL
     )
-    storage = HermesTokenStorage("srv")
+    storage = NorualTokenStorage("srv")
 
     assert storage.cimd_rejected()
     assert _maybe_use_cimd({}, storage) is None
@@ -620,7 +620,7 @@ def test_rejected_document_stays_rejected_after_a_restart(
 def test_reauthorizing_clears_the_rejection(tmp_path, monkeypatch, private_ports):
     """`hermes mcp login` wipes stored state, so a fixed document is retried."""
     monkeypatch.setenv("HERMES_HOME", str(tmp_path))
-    storage = HermesTokenStorage("srv")
+    storage = NorualTokenStorage("srv")
     storage.mark_cimd_rejected()
 
     storage.remove()
@@ -640,7 +640,7 @@ def test_rejected_dcr_client_leaves_cimd_available(
     )
 
     assert provider.context.client_metadata_url == _CIMD_CLIENT_METADATA_URL
-    assert not HermesTokenStorage("srv").cimd_rejected()
+    assert not NorualTokenStorage("srv").cimd_rejected()
 
 
 # ---------------------------------------------------------------------------

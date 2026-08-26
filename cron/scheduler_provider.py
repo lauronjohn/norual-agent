@@ -549,7 +549,7 @@ class InProcessCronScheduler(CronScheduler):
         # cron store on every tick cycle so secondary-profile jobs actually fire
         # instead of languishing in a store no ticker owns (#69377). Without this,
         # only the process-global HERMES_HOME (the default profile) is ticked.
-        # Heartbeats and recovery are also scoped per profile so `hermes cron
+        # Heartbeats and recovery are also scoped per profile so `norual cron
         # status` reflects liveness for every profile independently.
         if profile_homes:
             self._start_multiplex(
@@ -569,7 +569,7 @@ class InProcessCronScheduler(CronScheduler):
                 "Marked %d interrupted cron execution(s) unknown after restart",
                 recovered,
             )
-        # Heartbeat once before the first sleep so `hermes cron status` sees a
+        # Heartbeat once before the first sleep so `norual cron status` sees a
         # live ticker immediately after startup, not only after the first tick.
         record_ticker_heartbeat()
         # Exponential backoff for consecutive tick failures — most importantly
@@ -602,7 +602,7 @@ class InProcessCronScheduler(CronScheduler):
                 # re-checking stop_event keeps shutdown clean.
                 logger.error("Cron tick error: %s", e, exc_info=True)
                 # Persist the failure reason next to the heartbeat markers so
-                # `hermes cron status`/`list` (separate processes) can show
+                # `norual cron status`/`list` (separate processes) can show
                 # WHY ticks fail, not just that the success marker is stale —
                 # e.g. a root-rewritten jobs.json locking out the ticker's
                 # uid went unnoticed for ~14h with the reason buried in the
@@ -711,7 +711,7 @@ class InProcessCronScheduler(CronScheduler):
                     with use_cron_store(home):
                         record_ticker_heartbeat(success=ok)
                         # Surface the failure reason (or clear it) per profile
-                        # so `hermes cron status` can show WHY ticks fail
+                        # so `norual cron status` can show WHY ticks fail
                         # (#68483).
                         if ok:
                             clear_ticker_error()

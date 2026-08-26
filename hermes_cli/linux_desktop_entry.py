@@ -1,14 +1,14 @@
 """Install and remove the Linux desktop entry (``hermes.desktop``).
 
-``hermes desktop`` builds and launches the Electron app. On Linux, a
+``norual desktop`` builds and launches the Electron app. On Linux, a
 freshly-built app has no launcher presence: no menu item, no icon. This
 module writes the XDG desktop entry that gives it one.
-``hermes uninstall --gui`` removes the entry again.
+``norual uninstall --gui`` removes the entry again.
 
 Two values must be absolute for the entry to work:
 
   - ``Exec`` — the launcher runs without shell ``PATH`` customizations, so
-    a bare ``hermes desktop`` fails when hermes lives in ``~/.local/bin``
+    a bare ``norual desktop`` fails when norual lives in ``~/.local/bin``
     or a venv. Resolve the real binary and write its full path.
   - ``Icon`` — an unqualified icon name needs an indexed icon theme. The
     spec allows an absolute path instead, so point at the app icon in the
@@ -58,9 +58,9 @@ def icon_path(project_root: Path) -> Path:
 
 
 def resolve_exec_command() -> str:
-    """Build the absolute ``Exec=`` command line for ``hermes desktop``.
+    """Build the absolute ``Exec=`` command line for ``norual desktop``.
 
-    Prefer the real ``hermes`` executable (argv[0] or PATH). When Hermes
+    Prefer the real ``hermes`` executable (argv[0] or PATH). When Norual
     runs as a module with no launcher installed, use the current
     interpreter, also absolute.
     """
@@ -76,7 +76,7 @@ def resolve_exec_command() -> str:
             # installer's bash wrapper). Launched from the .desktop entry that
             # shebang resolves to the SYSTEM python and dies on the first
             # third-party import (#90292) — silently, since Terminal=false.
-            # sys.executable is the interpreter actually running Hermes (the
+            # sys.executable is the interpreter actually running Norual (the
             # venv one), so prefix it explicitly.
             argv = [str(Path(sys.executable).resolve()), str(resolved), "desktop"]
         else:
@@ -88,7 +88,7 @@ def resolve_exec_command() -> str:
 
 def _needs_interpreter(bin_path: Path) -> bool:
     """Whether ``bin_path`` is a Python script that must run under
-    ``sys.executable`` to see Hermes' venv (rather than its own shebang)."""
+    ``sys.executable`` to see Norual' venv (rather than its own shebang)."""
     try:
         with open(bin_path, "rb") as fh:
             head = fh.readline(256)
@@ -126,15 +126,15 @@ def render_desktop_entry(exec_command: str, icon: str) -> str:
     return (
         "[Desktop Entry]\n"
         "Type=Application\n"
-        "Name=Hermes\n"
-        "GenericName=Hermes Desktop\n"
-        "Comment=Launch Hermes Desktop\n"
+        "Name=Norual\n"
+        "GenericName=Norual Desktop\n"
+        "Comment=Launch Norual Desktop\n"
         f"Exec={exec_command}\n"
         f"Icon={icon}\n"
         "Terminal=false\n"
         "Categories=Utility;\n"
         "StartupNotify=true\n"
-        "StartupWMClass=Hermes\n"
+        "StartupWMClass=Norual\n"
     )
 
 
@@ -177,7 +177,7 @@ def _run_quiet(cmd: "list[str]") -> bool:
 
 
 def install_desktop_entry(project_root: Path) -> Optional[Path]:
-    """Write (or refresh) the Hermes desktop entry. Return its path.
+    """Write (or refresh) the Norual desktop entry. Return its path.
 
     Return ``None`` on non-Linux platforms or when the write fails. This
     is a convenience, never a reason to fail a launch.

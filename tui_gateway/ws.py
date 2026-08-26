@@ -388,7 +388,7 @@ async def handle_ws(
             }
         )
         if ready_ok:
-            # Live-apply skins Hermes activates mid-conversation.
+            # Live-apply skins Norual activates mid-conversation.
             server._ensure_skin_watcher()
             # Track this peer for session-less global broadcasts (skin.changed
             # from the background watcher) — write_json can't route those.

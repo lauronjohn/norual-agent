@@ -90,7 +90,7 @@ def test_unverified_guidance_warns_about_the_cached_exhaustion_replay():
     is replayed without issuing a request — so a real fix looks like it didn't
     work. Point at the reset before the user concludes that."""
     msg = _anthropic_msg(unverified=True)
-    assert "hermes auth reset anthropic" in msg
+    assert "norual auth reset anthropic" in msg
     assert "without contacting the API" in msg
 
 

@@ -689,7 +689,7 @@ def _find_all_skills(*, skip_disabled: bool = False) -> List[Dict[str, Any]]:
 
     Args:
         skip_disabled: If True, return ALL skills regardless of disabled
-            state (used by ``hermes skills`` config UI). Default False
+            state (used by ``norual skills`` config UI). Default False
             filters out disabled skills.
 
     Returns:
@@ -909,7 +909,7 @@ def _serve_plugin_skill(
                 "success": False,
                 "error": (
                     f"Plugin '{namespace}' is disabled. "
-                    f"Re-enable with: hermes plugins enable {namespace}"
+                    f"Re-enable with: norual plugins enable {namespace}"
                 ),
             },
             ensure_ascii=False,
@@ -1424,7 +1424,7 @@ def skill_view(
                         ),
                         "hint": (
                             "Inspect the skill in the repo checkout, or untrust "
-                            "the repo with `hermes skills untrust`."
+                            "the repo with `norual skills untrust`."
                         ),
                     },
                     ensure_ascii=False,
@@ -1508,7 +1508,7 @@ def skill_view(
                     "success": False,
                     "error": (
                         f"Skill '{resolved_name}' is disabled. "
-                        "Enable it with `hermes skills` or inspect the files directly on disk."
+                        "Enable it with `norual skills` or inspect the files directly on disk."
                     ),
                 },
                 ensure_ascii=False,
@@ -1845,7 +1845,7 @@ def skill_view(
                         "Your edits are kept locally\n"
                         "> and are never overwritten by org updates; share "
                         "them back with\n"
-                        "> `hermes sync propose` (or automatically, if your "
+                        "> `norual sync propose` (or automatically, if your "
                         "org enables it).\n\n"
                     )
                     rendered_content = header + rendered_content

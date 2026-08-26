@@ -19,7 +19,7 @@ image handle on `python.exe`, which uv never has to replace, so the shim is an
 ordinary unlocked file when uv rewrites it.
 
 This test is source-level because Linux CI cannot execute the PowerShell
-hand-off. The invariant it guards is that every `Invoke-HermesStep` call site
+hand-off. The invariant it guards is that every `Invoke-NorualStep` call site
 (the update, its retry, and the desktop rebuild) drives `$pythonExe`, never the
 `$hermesExe` shim. `hermes.exe` may still be *named* in the file for the
 step-2 unlock preflight -- that is a lock probe, not an invocation -- so we
@@ -44,7 +44,7 @@ def _handoff_source() -> str:
     """The script with its ``-SelfTest*`` fixture blocks removed.
 
     Those blocks exercise the hand-off machinery deliberately -- the pipe-drain
-    fixture runs a synthetic PowerShell step through ``Invoke-HermesStep`` to
+    fixture runs a synthetic PowerShell step through ``Invoke-NorualStep`` to
     prove the drain cannot deadlock (#90455) -- so they are not update steps
     and the "must drive python.exe" rule does not apply to them. Each exits
     before any marker/venv/desktop machinery runs.
@@ -59,16 +59,16 @@ def _handoff_source() -> str:
 def test_invoke_hermes_step_calls_drive_python_not_the_shim() -> None:
     source = _handoff_source()
 
-    invocations = re.findall(r"Invoke-HermesStep\s+(\$\w+)", source)
+    invocations = re.findall(r"Invoke-NorualStep\s+(\$\w+)", source)
     assert invocations, (
-        "Expected at least one Invoke-HermesStep call in "
+        "Expected at least one Invoke-NorualStep call in "
         "scripts/desktop-update/windows.ps1; the update hand-off structure "
         "changed -- update this guard."
     )
 
     offenders = [exe for exe in invocations if exe != "$pythonExe"]
     assert not offenders, (
-        "Every Invoke-HermesStep call in scripts/desktop-update/windows.ps1 "
+        "Every Invoke-NorualStep call in scripts/desktop-update/windows.ps1 "
         "must drive $pythonExe, not the hermes.exe shim. Driving the update "
         "through the shim keeps hermes.exe mapped as a running image, so uv's "
         "final shim rewrite fails with os error 32 and the Desktop update can "
@@ -97,9 +97,9 @@ def test_update_invocation_uses_module_entrypoint() -> None:
 def test_update_no_longer_invokes_the_hermes_exe_shim() -> None:
     source = _read()
 
-    assert "Invoke-HermesStep $hermesExe" not in source, (
+    assert "Invoke-NorualStep $hermesExe" not in source, (
         "scripts/desktop-update/windows.ps1 still invokes the update through "
-        "the hermes.exe shim (`Invoke-HermesStep $hermesExe`). That is the "
+        "the hermes.exe shim (`Invoke-NorualStep $hermesExe`). That is the "
         "exact self-lock this fix removes -- route it through $pythonExe "
         "instead."
     )
@@ -108,7 +108,7 @@ def test_update_no_longer_invokes_the_hermes_exe_shim() -> None:
 def test_desktop_relaunch_waits_for_an_in_place_rebuild() -> None:
     source = _read()
     relaunch = re.search(
-        r"function Start-DesktopRelaunch \{(?P<body>.*?)\n\}\n\nfunction Invoke-HermesStep",
+        r"function Start-DesktopRelaunch \{(?P<body>.*?)\n\}\n\nfunction Invoke-NorualStep",
         source,
         re.DOTALL,
     )

@@ -109,13 +109,13 @@ def _base_subprocess_env() -> dict:
 
     env = _build_browser_env()
     # The browser-use CLI runs under its own Python (uv tool / uvx), which
-    # may differ from Hermes's venv Python. PYTHONPATH/PYTHONHOME inherited
-    # from the agent process point at Hermes's venv site-packages, and a
+    # may differ from Norual's venv Python. PYTHONPATH/PYTHONHOME inherited
+    # from the agent process point at Norual's venv site-packages, and a
     # child interpreter honors them ahead of its own site-packages — so the
     # CLI imports compiled C-extensions (e.g. pydantic_core) built for the
     # wrong interpreter and crashes on ABI mismatch (#83427, #84841, #86006,
     # #86104). Strip both — the CLI manages its own environment and never
-    # needs Hermes's import path.
+    # needs Norual's import path.
     env.pop("PYTHONPATH", None)
     env.pop("PYTHONHOME", None)
     # Same class of hazard, PATH flavor: profile-spawned workers (kanban
@@ -282,7 +282,7 @@ def default_downgrade_notice() -> Optional[str]:
             pass
         return (
             "Browser Use CLI not found — using the built-in browser tools. "
-            "Run `hermes tools` (Browser Automation → Browser Use) to install it, "
+            "Run `norual tools` (Browser Automation → Browser Use) to install it, "
             "or `browser.backend: off` in config.yaml to silence this."
         )
     except Exception as e:  # pragma: no cover — a notice must never break startup
@@ -291,7 +291,7 @@ def default_downgrade_notice() -> Optional[str]:
 
 
 def _managed_bin_dir() -> Optional[str]:
-    """Hermes' own bin dir ($HERMES_HOME/bin) — where install.sh puts uv/uvx
+    """Norual' own bin dir ($HERMES_HOME/bin) — where install.sh puts uv/uvx
     and where install_cli() links the browser-use binary."""
     try:
         from hermes_constants import get_hermes_home
@@ -322,10 +322,10 @@ def _user_local_bin_dir() -> Optional[str]:
 def _find_cli() -> Optional[List[str]]:
     """Locate the browser-use CLI, or None when it can't be run.
 
-    MANAGED-FIRST resolution: Hermes' own ``$HERMES_HOME/bin`` copy — the
+    MANAGED-FIRST resolution: Norual' own ``$HERMES_HOME/bin`` copy — the
     one every browser backend selection installs and updates via
     ``install_cli()`` — always wins, so all sessions drive one canonical,
-    Hermes-controlled binary. PATH and the user-level tool dir
+    Norual-controlled binary. PATH and the user-level tool dir
     (~/.local/bin / %APPDATA%\\uv\\bin, where a manual ``uv tool install``
     links binaries) are fallbacks for setups that never ran our install,
     and cover Desktop/TUI workers that spawn with a minimal PATH. The uvx
@@ -348,7 +348,7 @@ def _find_cli() -> Optional[List[str]]:
 def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
     """Install the browser-use CLI persistently via ``uv tool install``.
 
-    Resolution order for uv: Hermes' managed uv (bootstrapped on demand via
+    Resolution order for uv: Norual' managed uv (bootstrapped on demand via
     ``hermes_cli.managed_uv.ensure_uv``) → uv on PATH. The binary is linked
     into ``$HERMES_HOME/bin`` (``UV_TOOL_BIN_DIR``) so ``_find_cli()``
     resolves it for every profile without touching the user's PATH.
@@ -357,9 +357,9 @@ def install_cli(timeout_s: int = 600) -> Tuple[bool, str]:
     """
     # MANAGED-FIRST: only the managed copy short-circuits the install. A
     # browser-use found on PATH is a user-level side install — it must NOT
-    # prevent provisioning the canonical Hermes-managed copy, or resolution
+    # prevent provisioning the canonical Norual-managed copy, or resolution
     # stays pinned to a binary we don't control (version drift, no updates
-    # through hermes tools).
+    # through norual tools).
     bin_dir = _managed_bin_dir()
     if bin_dir:
         managed = shutil.which("browser-use", path=bin_dir)
@@ -581,7 +581,7 @@ def _resolve_backend_cdp(
         return (
             f"Cloud browser provider {type(provider).__name__} failed to "
             f"provide a session: {e}. Fix the provider configuration or "
-            "switch backends via `hermes tools` → Browser Automation."
+            "switch backends via `norual tools` → Browser Automation."
         )
     cdp = str((session_info or {}).get("cdp_url") or "")
     if not cdp:

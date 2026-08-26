@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 from types import SimpleNamespace
 
-from cli import HermesCLI
+from cli import NorualCLI
 from hermes_cli.main import cmd_insights
 
 
@@ -20,7 +20,7 @@ class _InsightsEngineStub:
 
 
 def _run_show_insights(command: str):
-    cli_obj = HermesCLI.__new__(HermesCLI)
+    cli_obj = NorualCLI.__new__(NorualCLI)
     db = MagicMock()
     _InsightsEngineStub.calls = []
     with patch("hermes_state.SessionDB", return_value=db), \

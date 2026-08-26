@@ -7,7 +7,7 @@ background worker and returns ``{session_id, auth_url, flow}``; a ``poll``
 primitive reports ``{status: pending|approved|error}`` until the tokens land on
 disk for that server in that profile.
 
-The underlying token machinery is the *same* one the CLI ``hermes mcp login``
+The underlying token machinery is the *same* one the CLI ``norual mcp login``
 uses — ``hermes_cli.mcp_config._probe_single_server`` under
 ``tools.mcp_oauth.force_interactive_oauth`` — so no OAuth logic is reimplemented
 here. The only new piece is decoupling the two browser callbacks (authorization
@@ -95,7 +95,7 @@ def _start_loopback_listener(flow) -> "http.server.HTTPServer":
             code = (qs.get("code") or [None])[0]
             state = (qs.get("state") or [None])[0]
             error = (qs.get("error") or [None])[0]
-            body = b"<h1>Authorization received</h1><p>You can close this tab and return to Hermes.</p>"
+            body = b"<h1>Authorization received</h1><p>You can close this tab and return to Norual.</p>"
             status = 200
             try:
                 flow.deliver_callback(code=code, state=state, error=error)
@@ -156,10 +156,10 @@ def _worker(session_id: str, hermes_home: str, server_name: str, cfg: dict, reco
         secret_token = set_secret_scope(build_profile_secret_scope(Path(hermes_home)))
         try:
             with force_interactive_oauth(), dashboard_oauth_flow(flow):
-                from tools.mcp_oauth import HermesTokenStorage
+                from tools.mcp_oauth import NorualTokenStorage
 
                 manager = get_manager()
-                storage = HermesTokenStorage(server_name)
+                storage = NorualTokenStorage(server_name)
                 backup = storage.snapshot()
                 previous_entry = None
                 try:

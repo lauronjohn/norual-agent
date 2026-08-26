@@ -112,7 +112,7 @@ def _lazy_call_llm(*args, **kwargs):
 # Browser-specific tool keys passed through to the agent-browser subprocess
 # AFTER credential stripping.  agent-browser is a Node process loading npm
 # deps; handing it the full operator keyring (#29157 / GHSA-m4m8-xjp4-5rmm)
-# means a compromised transitive dependency could read every Hermes secret
+# means a compromised transitive dependency could read every Norual secret
 # straight out of process.env.  Strip by default, then re-add only the
 # browser-backend keys the worker legitimately needs.
 _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
@@ -128,7 +128,7 @@ _BROWSER_PASSTHROUGH_KEYS: tuple[str, ...] = (
 def _build_browser_env() -> dict:
     """Credential-scrubbed env for an agent-browser subprocess.
 
-    Strips Hermes-managed secrets (provider keys, gateway tokens, GitHub auth,
+    Strips Norual-managed secrets (provider keys, gateway tokens, GitHub auth,
     infra secrets) then re-adds only the browser-backend keys the worker needs.
     The ``hermes_subprocess_env`` import is deferred to keep ``browser_tool``
     importable under test harnesses that load it against a stubbed ``tools``
@@ -552,7 +552,7 @@ def _get_cdp_override_raw() -> str:
     This is the availability-check variant: callers that only need to know
     *whether* a CDP override is configured (tool ``check_fn`` gates,
     ``_is_local_mode`` / ``_is_local_backend`` routing decisions,
-    ``hermes doctor``) MUST use this instead of :func:`_get_cdp_override`.
+    ``norual doctor``) MUST use this instead of :func:`_get_cdp_override`.
 
     Rationale: ``_get_cdp_override`` resolves the endpoint over HTTP
     (``/json/version`` discovery, 10s timeout). Tool-schema assembly runs at
@@ -786,7 +786,7 @@ def _ensure_browser_plugins_loaded() -> None:
 
 
 def _get_cloud_provider() -> Optional[CloudBrowserProvider]:
-    """Return the provider cached for the active Hermes profile."""
+    """Return the provider cached for the active Norual profile."""
     global _cached_cloud_provider, _cloud_provider_resolved
     global _cached_cloud_provider_scope
 
@@ -1130,7 +1130,7 @@ def _lightpanda_fallback_reason(engine: str, command: str, result: Dict[str, Any
     """Return the user-visible reason a Lightpanda result needs Chrome fallback.
 
     ``None`` means no fallback should run.  The returned string is copied into
-    the fallback result so CLI/TUI/gateway users can see when Hermes silently
+    the fallback result so CLI/TUI/gateway users can see when Norual silently
     switched from Lightpanda to Chrome for completeness.
     """
     if engine != "lightpanda":
@@ -1271,7 +1271,7 @@ def _run_chrome_fallback_command(
         return {"success": False, "error": hint}
 
     # Resolve npx via the same PATH + extended-PATH cascade _find_agent_browser
-    # uses, not a bare shutil.which("npx") — Hermes-managed-Node-only setups
+    # uses, not a bare shutil.which("npx") — Norual-managed-Node-only setups
     # resolve npx only through the extended fallback path, and a bare lookup
     # would let a broken system npx shadow a healthy managed one. If npx isn't
     # found at all (Termux, bare container), fall back to the bare name and
@@ -1319,7 +1319,7 @@ def _run_chrome_fallback_command(
             #   and that grandchild's CreateProcess dies silently
             #   ("Daemon process exited during startup with no error output")
             #   when inherited parent handles are in a weird state. Observed
-            #   in the Hermes CLI where sys.stdout and sys.stderr both report
+            #   in the Norual CLI where sys.stdout and sys.stderr both report
             #   fileno=1 (stderr dup'd onto stdout at the OS level).
             # * close_fds=True → block inheritance of every other handle.
             #   (Default on POSIX; must be explicit on Windows for stdio.)
@@ -1689,7 +1689,7 @@ BROWSER_SESSION_INACTIVITY_TIMEOUT = _get_session_inactivity_timeout()
 # over 10 days in a single 18-day-uptime process, pinning ~5 CPU cores.
 BROWSER_ORPHAN_REAP_INTERVAL = 300  # seconds
 
-# Hard ceiling for a daemon whose owning hermes process is still alive but
+# Hard ceiling for a daemon whose owning norual process is still alive but
 # which has fallen out of that process's in-memory session tracking.  The
 # owner-alive check alone makes such a daemon immortal: in-memory tracking is
 # lost on any exception path, yet the owner PID stays up, so the reaper skips
@@ -1751,7 +1751,7 @@ def _emergency_cleanup_all_sessions():
     Called on process exit or interrupt to prevent orphaned sessions.
 
     Also runs the orphan reaper to clean up daemons left behind by previously
-    crashed hermes processes — this way every clean hermes exit sweeps
+    crashed norual processes — this way every clean norual exit sweeps
     accumulated orphans, not just ones that actively used the browser tool.
     """
     global _cleanup_done
@@ -1774,9 +1774,9 @@ def _emergency_cleanup_all_sessions():
                 _session_last_activity.clear()
                 _recording_sessions.clear()
 
-    # Sweep orphans from other crashed hermes processes.  Safe even if we
+    # Sweep orphans from other crashed norual processes.  Safe even if we
     # never used the browser — uses owner_pid liveness to avoid reaping
-    # daemons owned by other live hermes processes.
+    # daemons owned by other live norual processes.
     try:
         _reap_orphaned_browser_sessions()
     except Exception as e:
@@ -1825,10 +1825,10 @@ def _cleanup_inactive_browser_sessions():
 
 
 def _write_owner_pid(socket_dir: str, session_name: str) -> None:
-    """Record the current hermes PID as the owner of a browser socket dir.
+    """Record the current norual PID as the owner of a browser socket dir.
 
     Written atomically to ``<socket_dir>/<session_name>.owner_pid`` so the
-    orphan reaper can distinguish daemons owned by a live hermes process
+    orphan reaper can distinguish daemons owned by a live norual process
     (don't reap) from daemons whose owner crashed (reap).  Best-effort —
     an OSError here just falls back to the legacy ``tracked_names``
     heuristic in the reaper.
@@ -1934,7 +1934,7 @@ def _socket_dir_idle_seconds(socket_dir: str) -> Optional[float]:
     Every browser command writes ``_stdout_<cmd>`` / ``_stderr_<cmd>`` temp
     files into the session's socket dir, so the newest mtime under that dir is
     a last-activity marker that — unlike ``_session_last_activity`` — survives
-    hermes restarts and does not depend on in-memory bookkeeping surviving an
+    norual restarts and does not depend on in-memory bookkeeping surviving an
     exception path.
 
     The directory's own mtime is not sufficient: command names repeat, so
@@ -1971,13 +1971,13 @@ def _reap_orphaned_browser_sessions():
 
     This function scans the tmp directory for ``agent-browser-*`` socket dirs
     left behind by previous runs, reads the daemon PID files, and kills any
-    daemons whose owning hermes process is no longer alive.
+    daemons whose owning norual process is no longer alive.
 
     Ownership detection priority:
       1. ``<session>.owner_pid`` file (written by current code) — if the
-         referenced hermes PID is alive, leave the daemon alone regardless
+         referenced norual PID is alive, leave the daemon alone regardless
          of whether it's in *this* process's ``_active_sessions``.  This is
-         cross-process safe: two concurrent hermes instances won't reap each
+         cross-process safe: two concurrent norual instances won't reap each
          other's daemons.
       2. Fallback for daemons that predate owner_pid: check
          ``_active_sessions`` in the current process.  If not tracked here,
@@ -2031,7 +2031,7 @@ def _reap_orphaned_browser_sessions():
 
         if owner_alive is True:
             # Owner is alive.  Normally that means the session belongs to a
-            # live hermes process and must not be touched — but "owner alive"
+            # live norual process and must not be touched — but "owner alive"
             # alone made leaked daemons immortal: if the owner lost its
             # in-memory tracking (any exception path between spawn and
             # registration), nothing would ever reap the daemon, and the
@@ -2298,7 +2298,7 @@ BROWSER_TOOL_SCHEMAS = [
     },
     {
         "name": "browser_vision",
-        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Hermes falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
+        "description": "Take a screenshot of the current page so you can inspect it visually. Use this when you need to understand what the page looks like - especially for CAPTCHAs, visual verification challenges, complex layouts, or cases where the text snapshot misses important visual information. When your active model has native vision, the screenshot is attached to your context directly and you inspect it on the next turn; otherwise Norual falls back to an auxiliary vision model and returns a text analysis. Includes a screenshot_path that you can share with the user by including MEDIA:<screenshot_path> in your response. Requires browser_navigate to be called first.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -2501,11 +2501,11 @@ def _agent_browser_candidate_present(path: str | None) -> bool:
 
 
 def _resolve_npx_bin() -> Optional[str]:
-    """Resolve a runnable npx binary, preferring the Hermes-managed/Homebrew
+    """Resolve a runnable npx binary, preferring the Norual-managed/Homebrew
     extended search over a bare ambient PATH lookup.
 
     Checking bare PATH first would let a broken or unrelated system npx
-    shadow a healthy Hermes-managed one with no recovery — every candidate
+    shadow a healthy Norual-managed one with no recovery — every candidate
     is therefore validated with ``node_tool_runnable`` (the same check
     ``find_hermes_node_executable`` uses to self-heal a managed Node tree)
     before being trusted, falling through to the next candidate otherwise.
@@ -2525,7 +2525,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     """
     Find the agent-browser CLI executable.
 
-    Checks in order: current PATH, Homebrew/common bin dirs, Hermes-managed
+    Checks in order: current PATH, Homebrew/common bin dirs, Norual-managed
     node, local node_modules/.bin/, npx fallback.
 
     Returns:
@@ -2551,7 +2551,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
     # Every candidate below is validated with ``agent_browser_runnable`` before
     # it is cached. A bare ``shutil.which`` hit is NOT trusted: agent-browser's
     # npm postinstall re-points a global install symlink at our local
-    # node_modules binary, which disappears on the next ``hermes update`` and
+    # node_modules binary, which disappears on the next ``norual update`` and
     # leaves a dangling link that ``which`` still reports but exec fails on with
     # exit 127 (issue #48521). Validating lets a dead candidate fall through to
     # the next working resolution (extended PATH → local .bin → npx) instead of
@@ -2568,7 +2568,7 @@ def _find_agent_browser(*, validate: bool = True) -> str:
         _agent_browser_resolved = True
         return which_result
 
-    # Build an extended search PATH including Hermes-managed Node, macOS
+    # Build an extended search PATH including Norual-managed Node, macOS
     # versioned Homebrew installs, and fallback system dirs like Termux.
     extended_path = _merge_browser_path("")
     if extended_path:
@@ -2731,7 +2731,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
     out of the npm workspace install graph entirely (nothing to prune it
     anymore) but means the first real invocation in a session would
     otherwise pay npx's registry-lookup/fetch cost. Calling this during
-    ``hermes update`` (or ``hermes doctor --fix``) warms npx's own cache
+    ``norual update`` (or ``norual doctor --fix``) warms npx's own cache
     ahead of time, restoring the "available before any session starts"
     property agent-browser had while it was an eager root dependency —
     without re-entangling it with the workspace graph.
@@ -2739,8 +2739,8 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
     Runs a credential-scrubbed, PATH-propagated environment matching every
     other agent-browser subprocess spawn (see ``_build_browser_env``) —
     this used to inherit the full parent environment, including every
-    provider/gateway credential Hermes holds, while running registry-fetched
-    npm code on every ``hermes update`` (the GHSA-m4m8-xjp4-5rmm class of
+    provider/gateway credential Norual holds, while running registry-fetched
+    npm code on every ``norual update`` (the GHSA-m4m8-xjp4-5rmm class of
     risk ``_build_browser_env`` exists specifically to prevent). Runs in its
     own process group and kills the *whole* group — not just the top-level
     npx PID — on timeout, since a surviving descendant can otherwise hold a
@@ -2775,7 +2775,7 @@ def warm_agent_browser_npx_cache(timeout: float = 60.0) -> bool:
         # range, not an exact pin — a compromised future 0.26.x patch must
         # not get to run its own install-time lifecycle scripts here.
         "--ignore-scripts",
-        # --prefer-offline: once cached, repeat `hermes update`/`doctor
+        # --prefer-offline: once cached, repeat `norual update`/`doctor
         # --fix` runs shouldn't hit the registry just to re-confirm
         # "latest" is still latest — that would defeat the point of
         # warming the cache in the first place.
@@ -2947,7 +2947,7 @@ def _run_browser_command(
             f"agent-browser-{session_info['session_name']}"
         )
         os.makedirs(task_socket_dir, mode=0o700, exist_ok=True)
-        # Record this hermes PID as the session owner (cross-process safe
+        # Record this norual PID as the session owner (cross-process safe
         # orphan detection — see _write_owner_pid).
         _write_owner_pid(task_socket_dir, session_info['session_name'])
         logger.debug("browser cmd=%s task=%s socket_dir=%s (%d chars)",
@@ -4543,7 +4543,7 @@ def browser_vision(question: str, annotate: bool = False, task_id: Optional[str]
 
     Captures what's visually displayed in the browser. When the active model
     supports native vision, the screenshot is attached directly to the
-    conversation so the model can inspect it on the next turn; otherwise Hermes
+    conversation so the model can inspect it on the next turn; otherwise Norual
     falls back to the auxiliary vision model and returns a text analysis. Useful
     for visual content the text-based snapshot may not capture (CAPTCHAs,
     verification challenges, images, complex layouts, etc.).

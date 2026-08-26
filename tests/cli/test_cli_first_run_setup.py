@@ -51,7 +51,7 @@ def _import_cli():
 
 
 def _make_shell(cli, monkeypatch):
-    shell = cli.HermesCLI(compact=True, max_turns=1)
+    shell = cli.NorualCLI(compact=True, max_turns=1)
     return shell
 
 
@@ -249,4 +249,4 @@ def test_empty_key_error_names_actual_provider(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "fireworks" in out
     assert "OPENROUTER_API_KEY" not in out
-    assert "hermes model" in out or "hermes setup" in out
+    assert "norual model" in out or "norual setup" in out

@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Protocol
 
 # Add parent directory to path for imports BEFORE repo-level imports.
-# Without this, standalone invocations (e.g. after `hermes update` reloads
+# Without this, standalone invocations (e.g. after `norual update` reloads
 # the module) fail with ModuleNotFoundError for hermes_time et al.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -143,7 +143,7 @@ def _fallback_chain_phrase() -> str:
     if chain:
         return "Fallback chain was exhausted or unavailable."
     return (
-        "No fallback chain configured — add one with `hermes fallback add`, "
+        "No fallback chain configured — add one with `norual fallback add`, "
         "or set a cron fleet default via `cron.model` + `cron.model_provider` "
         "in config.yaml."
     )
@@ -186,7 +186,7 @@ def _failure_streak_nudge(job: dict) -> str:
     job_ref = job.get("name") or job.get("id") or "this job"
     return (
         f"\nThis job has failed {streak} runs in a row — worth a review. "
-        f"Fix its prompt/config, or pause it with `hermes cron pause {job_ref}` "
+        f"Fix its prompt/config, or pause it with `norual cron pause {job_ref}` "
         "(resume/remove also available) to stop the noise."
     )
 
@@ -226,8 +226,8 @@ def _summarize_cron_failure_for_delivery(job: dict, error: str | None) -> str:
         else:
             job_id = job.get("id") or "<job_id>"
             remediation = (
-                "On the host running Hermes, pin it explicitly: "
-                f"`hermes cron edit {job_id} --provider <provider> "
+                "On the host running Norual, pin it explicitly: "
+                f"`norual cron edit {job_id} --provider <provider> "
                 "--model <model>`."
             )
         return (
@@ -357,7 +357,7 @@ def _summarize_cron_failure_for_delivery(job: dict, error: str | None) -> str:
     message = f"⚠️ Cron '{job_name}' failed: {cleaned}"
 
     # Import-class failures (#95294 part 3): a long-lived gateway whose
-    # checkout was updated underneath it (interrupted `hermes update`, manual
+    # checkout was updated underneath it (interrupted `norual update`, manual
     # git pull) serves MIXED modules — old entries frozen in sys.modules,
     # new files loaded by lazy imports — and every agent cron job then dies
     # with `cannot import name X` / ModuleNotFoundError. The error itself
@@ -387,7 +387,7 @@ def _summarize_cron_failure_for_delivery(job: dict, error: str | None) -> str:
             message += (
                 f" Likely cause: the gateway is running stale code (booted "
                 f"on {boot_rev}, disk is at {disk_rev}) — run "
-                "`hermes gateway restart` to fix it."
+                "`norual gateway restart` to fix it."
             )
 
     return message
@@ -534,7 +534,7 @@ def _resolve_cron_enabled_toolsets(job: dict, cfg: dict) -> list[str] | None:
        Keeps the agent's job-scoped toolset override intact — #6130. Enabled
        MCP servers are layered on per ``_merge_mcp_into_per_job_toolsets`` so a
        native-toolset allowlist does not silently strip MCP tools.
-    2. Per-platform ``hermes tools`` config for the ``cron`` platform.
+    2. Per-platform ``norual tools`` config for the ``cron`` platform.
        Mirrors gateway behavior (``_get_platform_tools(cfg, platform_key)``)
        so users can gate cron toolsets globally without recreating every job.
     3. ``None`` on any lookup failure — AIAgent loads the full default set
@@ -1524,7 +1524,7 @@ def _interpreter_shutting_down(exc: Optional[BaseException] = None) -> bool:
     """True when the Python interpreter is finalizing.
 
     A cron tick can fire while the gateway is tearing down — SIGTERM from
-    ``hermes update`` / ``hermes gateway stop`` / systemd restart, or an
+    ``norual update`` / ``norual gateway stop`` / systemd restart, or an
     OOM-kill. Once finalization starts, ``concurrent.futures`` refuses new
     work with ``RuntimeError: cannot schedule new futures after interpreter
     shutdown`` and asyncio's default executor is gone, so *any* attempt to
@@ -1554,7 +1554,7 @@ _hermes_home: Path | None = None
 
 
 def _get_hermes_home() -> Path:
-    """Resolve Hermes home dynamically while preserving test monkeypatch hooks.
+    """Resolve Norual home dynamically while preserving test monkeypatch hooks.
 
     Cron is per-profile by design (#4707): the in-process ticker runs inside a
     profile-scoped gateway, so resolving the active HERMES_HOME at call time
@@ -1864,7 +1864,7 @@ def _open_continuable_cron_thread(
     if not callable(create_thread) or loop is None:
         return None
     task_name = job.get("name") or job.get("id", "cron")
-    thread_name = f"Hermes — {task_name}"
+    thread_name = f"Norual — {task_name}"
     try:
         from agent.async_utils import safe_schedule_threadsafe
 
@@ -2536,7 +2536,7 @@ def _get_bot_chat_delivery_timeout() -> int:
 def _deliver_to_bot_chat(job: dict, content: str, profile: str) -> Optional[str]:
     """Deliver job output into a profile's canonical Bot Chat as an inbound turn.
 
-    Runs ``hermes [-p <profile>] chat --in ~ -c "Bot Chat" --create-if-missing
+    Runs ``norual [-p <profile>] chat --in ~ -c "Bot Chat" --create-if-missing
     -Q --query-file <tmp>`` — the exact lane Bot Mode agent-to-agent messages
     use, so the adopt-before-mint canonical-session rules apply and the target
     bot receives the output as a real user-role message it can act on.
@@ -2563,9 +2563,9 @@ def _deliver_to_bot_chat(job: dict, content: str, profile: str) -> Optional[str]
             if _ilu.find_spec("hermes_cli") is not None:
                 argv = [sys.executable, "-m", "hermes_cli.main"]
             else:
-                return "bot-chat delivery failed: hermes CLI not resolvable"
+                return "bot-chat delivery failed: norual CLI not resolvable"
         except Exception:
-            return "bot-chat delivery failed: hermes CLI not resolvable"
+            return "bot-chat delivery failed: norual CLI not resolvable"
 
     env = os.environ.copy()
     if profile:
@@ -3024,7 +3024,7 @@ def _deliver_result(job: dict, content: str, adapters=None, loop=None) -> Option
 
     # Bridge gateway media-policy config (strict / allow_dirs / trust_recent)
     # into the env vars the path validator reads. Gateway startup does this
-    # at boot; a standalone process (manual `hermes cron run` from the CLI,
+    # at boot; a standalone process (manual `norual cron run` from the CLI,
     # a cron tick without the gateway) historically did NOT — so manual runs
     # filtered attachment paths under a DIFFERENT policy than scheduled runs
     # and silently dropped files the gateway would deliver. Idempotent,
@@ -4051,7 +4051,7 @@ def _run_job_script(
     (the `memory-watchdog.sh` pattern) without wrapping them in Python.
 
     Subprocess environment is passed through ``_sanitize_subprocess_env`` so
-    provider credentials and other Hermes-managed secrets are not inherited
+    provider credentials and other Norual-managed secrets are not inherited
     (SECURITY.md §2.3), matching terminal and MCP child processes.
 
     Args:
@@ -4882,8 +4882,8 @@ def _preflight_check_provider_key(job: dict, cfg: dict) -> Optional[str]:
     except AuthError as exc:
         return (
             f"provider credential missing: {exc}. "
-            "Set the provider API key in .env (or `hermes setup`), or pin a "
-            "working provider via `hermes cron edit "
+            "Set the provider API key in .env (or `norual setup`), or pin a "
+            "working provider via `norual cron edit "
             f"{job.get('id')} --provider <p>`."
         )
     except Exception:
@@ -4948,7 +4948,7 @@ def _preflight_check_delivery(job: dict) -> Optional[str]:
             return (
                 f"delivery platform '{platform_name}' has no gateway "
                 "credentials configured (not connected). Configure it via "
-                "`hermes setup` or change the job's `deliver` target."
+                "`norual setup` or change the job's `deliver` target."
             )
     return None
 
@@ -5674,7 +5674,7 @@ def run_job(
 
         # Mark this job as NOT the dispatcher-owned kanban worker.
         #
-        # A kanban worker is a normal `hermes chat -q` CLI agent whose default
+        # A kanban worker is a normal `norual chat -q` CLI agent whose default
         # toolset includes `cronjob`, running with HERMES_KANBAN_TASK
         # legitimately in its own env; `cronjob(action="run")` calls
         # run_one_job() -> run_job() right here in that process.  Without this
@@ -5727,7 +5727,7 @@ def run_job(
         # Model resolution precedence: per-job override > cron.model (the
         # cron-fleet default) > HERMES_MODEL env > config.yaml ``model:``
         # (string or ``{default: ...}``). The per-job value is intentionally
-        # re-read from storage every tick so a ``hermes cron edit --model``
+        # re-read from storage every tick so a ``norual cron edit --model``
         # after a failed run takes effect on the next tick — there is no
         # in-memory cache.
         model = job.get("model") or os.getenv("HERMES_MODEL") or ""
@@ -5791,8 +5791,8 @@ def run_job(
                 f"HERMES_MODEL={os.getenv('HERMES_MODEL', '')!r}, "
                 "config.yaml model.default missing or empty). "
                 f"Set a per-job model via "
-                f"`hermes cron edit {job_id} --model <name>` or set a "
-                "default with `hermes model <name>`."
+                f"`norual cron edit {job_id} --model <name>` or set a "
+                "default with `norual model <name>`."
             )
 
         # Apply IPv4 preference if configured.
@@ -6087,9 +6087,9 @@ def run_job(
                     )
                 else:
                     _remediation = (
-                        "To run on the new config, on the host running Hermes "
+                        "To run on the new config, on the host running Norual "
                         "pin it explicitly: "
-                        f"`hermes cron edit {job_id} --provider <provider> "
+                        f"`norual cron edit {job_id} --provider <provider> "
                         "--model <model>` (or pin the original values to keep "
                         "them)."
                     )
@@ -7226,7 +7226,7 @@ def _run_one_job_body(
         elif incident_acked and not success:
             # Distinct from plain "suppressed" (silence marker / local jobs):
             # the failure ping was withheld because the operator acked this
-            # exact signature via `hermes cron incidents ack`.
+            # exact signature via `norual cron incidents ack`.
             delivery_outcome = "suppressed_acked"
         else:
             delivery_outcome = "suppressed"
@@ -7483,9 +7483,9 @@ def tick(
         raise
 
     try:
-        # Global emergency stop (`hermes pause`): skip dispatch entirely while
+        # Global emergency stop (`norual pause`): skip dispatch entirely while
         # the ESTOP sentinel exists. Never touches in-flight runs — due jobs
-        # simply wait for the next tick after `hermes resume`. Logged once per
+        # simply wait for the next tick after `norual resume`. Logged once per
         # engagement (not every tick) by check_paused.
         try:
             from agent.estop import check_paused as _estop_check_paused
@@ -7500,7 +7500,7 @@ def tick(
 
         # Dead-owner claim reclaim (#86721): execution rows carry their owner
         # pid + process start time, but recovery previously ran only at
-        # scheduler STARTUP. A one-shot `hermes cron run` that claimed a job
+        # scheduler STARTUP. A one-shot `norual cron run` that claimed a job
         # and died mid-run (its runner thread lived in the exiting CLI
         # process) left the row 'claimed' forever while the long-lived
         # gateway ticker kept running — blocking every future run of that

@@ -337,7 +337,7 @@ def _detect_environment(env: str) -> bool:
         except Exception:
             result = False
     elif env == "s6":
-        # The Hermes Docker image runs s6-overlay as PID 1 (/init). s6 plants
+        # The Norual Docker image runs s6-overlay as PID 1 (/init). s6 plants
         # its runtime scaffolding under /run/s6 and ships its admin tree under
         # /package/admin/s6-overlay. Either marker means we're inside an
         # s6-supervised container.
@@ -436,9 +436,9 @@ def _load_raw_config() -> Dict[str, Any]:
 
 # Skills that must stay available regardless of configuration. The
 # `hermes-agent` skill is the agent's own operating manual — it drives
-# configuring, extending, and troubleshooting Hermes itself, and the system
+# configuring, extending, and troubleshooting Norual itself, and the system
 # prompt unconditionally points at it. Disabling it leaves the agent unable
-# to help with Hermes, so disable requests for these names are ignored
+# to help with Norual, so disable requests for these names are ignored
 # everywhere the disabled list is consulted.
 ESSENTIAL_SKILLS: frozenset = frozenset({"hermes-agent"})
 
@@ -486,7 +486,7 @@ def get_disabled_skill_names(platform: str | None = None) -> Set[str]:
 def parse_config_string_list(value) -> List[str]:
     """Normalize a config value that may hold a JSON-array string into a list.
 
-    ``hermes config set`` and JSON-mode editor saves store lists as quoted
+    ``norual config set`` and JSON-mode editor saves store lists as quoted
     JSON strings (``'["a","b"]'`` or the Python-literal ``"['a']"``). Treating
     such a string as a single name makes a curated disabled list silently
     filter nothing (#86661); parsing it restores the intended list. A scalar
@@ -638,7 +638,7 @@ def get_all_skills_dirs() -> List[Path]:
 #
 # Two candidate roots at the project root (found by walking up from cwd to the
 # first directory containing ``.git``):
-#   <root>/.hermes/skills/   — Hermes-native location
+#   <root>/.hermes/skills/   — Norual-native location
 #   <root>/.agents/skills/   — cross-tool convention shared with other harnesses
 #
 # TRUST GATE: unlike AGENTS.md (plain instruction text), skills are load-on-
@@ -647,7 +647,7 @@ def get_all_skills_dirs() -> List[Path]:
 # when the project root is listed in ``skills.trusted_project_dirs`` in
 # config.yaml (Codex-style per-path trust). Untrusted dirs are still
 # *discoverable* via get_untrusted_project_skills_root() so the CLI can print
-# a one-line "run `hermes skills trust`" notice.
+# a one-line "run `norual skills trust`" notice.
 #
 # PRECEDENCE: trusted project skills override same-named profile/bundled
 # skills (index scans project dirs first; skill_view resolves cross-tier
@@ -782,7 +782,7 @@ def get_untrusted_project_skills_root() -> Optional[Tuple[Path, int]]:
     """When cwd's project has skills but is NOT trusted: (root, skill_count).
 
     Used by the CLI to print a one-line notice pointing at
-    ``hermes skills trust``. Returns None when there is nothing to notify
+    ``norual skills trust``. Returns None when there is nothing to notify
     about (no project, no skills, already trusted, or discovery disabled).
     """
     parsed = _load_raw_config()
@@ -817,7 +817,7 @@ def get_scan_ordered_skills_dirs() -> List[Path]:
 
 # ── Project skill quarantine (scan-time injection defense) ────────────────
 #
-# Trust (`hermes skills trust`) is a REPO-level decision made once; the repo's
+# Trust (`norual skills trust`) is a REPO-level decision made once; the repo's
 # skill content keeps changing underneath it with every pull. The hub install
 # path runs skills_guard on install, but project skills are read straight from
 # a checkout — without this gate a `git pull` could inject a malicious skill
@@ -977,7 +977,7 @@ def _resolve_for_skill_ownership(path) -> Path:
 def is_external_skill_path(path) -> bool:
     """Return True when ``path`` lives under a configured external skills dir.
 
-    ``skills.external_dirs`` are externally owned: Hermes can discover and view
+    ``skills.external_dirs`` are externally owned: Norual can discover and view
     their skills, and foreground user-directed tool calls may still edit them,
     but autonomous lifecycle maintenance must treat them as read-only. This
     helper centralizes the ownership boundary so curator/reporting/tool paths do
@@ -1010,14 +1010,14 @@ def extract_skill_conditions(frontmatter: Dict[str, Any]) -> Dict[str, List]:
     # Handle cases where metadata is not a dict (e.g., a string from malformed YAML)
     if not isinstance(metadata, dict):
         metadata = {}
-    hermes = metadata.get("hermes") or {}
-    if not isinstance(hermes, dict):
-        hermes = {}
+    norual = metadata.get("hermes") or {}
+    if not isinstance(norual, dict):
+        norual = {}
     return {
-        "fallback_for_toolsets": hermes.get("fallback_for_toolsets", []),
-        "requires_toolsets": hermes.get("requires_toolsets", []),
-        "fallback_for_tools": hermes.get("fallback_for_tools", []),
-        "requires_tools": hermes.get("requires_tools", []),
+        "fallback_for_toolsets": norual.get("fallback_for_toolsets", []),
+        "requires_toolsets": norual.get("requires_toolsets", []),
+        "fallback_for_tools": norual.get("fallback_for_tools", []),
+        "requires_tools": norual.get("requires_tools", []),
     }
 
 
@@ -1043,10 +1043,10 @@ def extract_skill_config_vars(frontmatter: Dict[str, Any]) -> List[Dict[str, Any
     metadata = frontmatter.get("metadata")
     if not isinstance(metadata, dict):
         return []
-    hermes = metadata.get("hermes")
-    if not isinstance(hermes, dict):
+    norual = metadata.get("hermes")
+    if not isinstance(norual, dict):
         return []
-    raw = hermes.get("config")
+    raw = norual.get("config")
     if not raw:
         return []
     if isinstance(raw, dict):
@@ -1203,7 +1203,7 @@ def is_skill_description_truncated_for_prompt(frontmatter: Dict[str, Any]) -> bo
 def iter_skill_index_files(skills_dir: Path, filename: str):
     """Walk skills_dir yielding sorted paths matching *filename*.
 
-    Excludes Hermes metadata, VCS, virtualenv/dependency, cache, and skill
+    Excludes Norual metadata, VCS, virtualenv/dependency, cache, and skill
     support directories. Support directories (references/templates/assets/
     scripts) can contain arbitrary markdown and even archived package
     ``SKILL.md`` files, but they are progressive-disclosure data loaded through

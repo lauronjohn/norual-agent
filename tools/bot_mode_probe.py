@@ -45,7 +45,7 @@ _cached: dict[str, str] = {}
 
 
 def _hermes_root(home: Path) -> Path:
-    """Root ~/.hermes for both the default profile and named profiles."""
+    """Root ~/.norual for both the default profile and named profiles."""
     if home.parent.name == "profiles":
         return home.parent.parent
     return home
@@ -169,7 +169,7 @@ def _roster_lines(root: Path, me: str) -> list[str]:
 
 
 def _peers(root: Path) -> list[str]:
-    """Registered peer gateway names (``hermes peer``), for the protocol text.
+    """Registered peer gateway names (``norual peer``), for the protocol text.
 
     Reads config.yaml directly (cheap, no config-loader import) — the section
     is optional and absent on most installs. Never raises.
@@ -196,7 +196,7 @@ def _remote_paragraph(root: Path) -> str:
     """Protocol addendum for agents on OTHER connected machines.
 
     Fed by the Desktop relay roster (``tools/bot_relay.py``) — every gateway
-    connected to the user's Desktop (local, remote URL, SSH, Hermes Cloud,
+    connected to the user's Desktop (local, remote URL, SSH, Norual Cloud,
     docker) syncs its agents here, so bots can DM across machines with the
     same message_agent tool. Only rendered when the relay roster is
     non-empty.
@@ -234,7 +234,7 @@ def _peer_paragraph(root: Path) -> str:
         "\n\nTeammates on OTHER machines: this install also has peer gateways "
         f"registered ({listed}). Message an agent on a peer the same way — "
         'message_agent with target "<peer>/<agent-name>" (or "<peer>" alone '
-        "for the peer's main agent). Run `hermes peer list` for the live "
+        "for the peer's main agent). Run `norual peer list` for the live "
         "peer list."
     )
 
@@ -258,7 +258,7 @@ def _build_section(home: Path) -> str:
 
     return (
         f"{_PROTOCOL_HEADING}\n"
-        "This install runs Bot Mode: each Hermes profile is an agent teammate with "
+        "This install runs Bot Mode: each Norual profile is an agent teammate with "
         'one canonical "Bot Chat" conversation, and you have the `message_agent` '
         "tool to DM any of them. It is FIRE-AND-FORGET: it delivers your message "
         "with your attribution prefixed automatically and returns an acknowledgement "

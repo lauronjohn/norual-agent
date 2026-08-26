@@ -184,7 +184,7 @@ def find_provider_dir(name: str) -> Optional[Path]:
     ``plugins/memory/config_schema.py``) and ``cli.py`` (loaded by
     ``discover_plugin_cli_commands`` at argparse time). Without a directory, a
     pip-installed provider silently loses its dashboard config panel and its
-    ``hermes <provider>`` subcommands — working, but a second-class citizen next
+    ``norual <provider>`` subcommands — working, but a second-class citizen next
     to a directory install.
     """
     # Bundled
@@ -569,7 +569,7 @@ class _ProviderCollector:
         and resolved path recorded here.
 
         Gated on ``register_skills`` so merely *inspecting* an inactive
-        provider — ``hermes memory status``, the setup picker — leaves no
+        provider — ``norual memory status``, the setup picker — leaves no
         registry side effects behind.
         """
         if not self._register_skills:
@@ -633,7 +633,7 @@ class _ProviderCollector:
 
         Lazy because the common case — a provider that only calls
         ``register_memory_provider`` — must not pay for importing the general
-        plugin manager, which discovery touches on every hermes startup.
+        plugin manager, which discovery touches on every norual startup.
         """
         if self._context is None:
             from hermes_cli.plugins import PluginContext, PluginManifest, get_plugin_manager

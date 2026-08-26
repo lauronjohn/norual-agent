@@ -14,7 +14,7 @@ Covers:
 from pathlib import Path
 
 
-class TestHermesAgentHelpGuidance:
+class TestNorualAgentHelpGuidance:
     def test_skill_variant_used_when_skill_view_present(self):
         from agent.prompt_builder import HERMES_AGENT_HELP_GUIDANCE
         assert "skill_view(name='hermes-agent')" in HERMES_AGENT_HELP_GUIDANCE

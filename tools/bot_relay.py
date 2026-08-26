@@ -1,7 +1,7 @@
 """Bot Mode cross-connection relay — connections ARE the peer set.
 
 Every gateway connected to the user's Desktop (local, remote URL, SSH,
-Hermes Cloud, docker) is a persistent line. This module is the gateway-side
+Norual Cloud, docker) is a persistent line. This module is the gateway-side
 half of the relay that rides those lines so agents on ANY connected gateway
 can find and message agents on ANY other, with `message_agent` as the one
 send path (Teknium ruling, Aug 2026 — the peers-vs-connections split was
@@ -536,7 +536,7 @@ def waiter_command(root: Path | str, envelope: dict) -> str:
 
 
 def _hermes_cli() -> str:
-    """Resolve the hermes CLI beside this gateway's own interpreter.
+    """Resolve the norual CLI beside this gateway's own interpreter.
 
     The deliver RPC runs on the target gateway, whose process is the venv
     python — its bin/Scripts directory holds the matching ``hermes``

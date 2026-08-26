@@ -109,7 +109,7 @@ def wire(profile, monkeypatch):
 
 def _assert_identity(request, account_id="acct-attribution-test"):
     assert request.headers["originator"] == "hermes-agent"
-    assert request.headers["user-agent"] == f"HermesAgent/{__version__}"
+    assert request.headers["user-agent"] == f"NorualAgent/{__version__}"
     assert request.headers["chatgpt-account-id"] == account_id
     assert "extra_headers" not in json.loads(request.content)
 
@@ -122,7 +122,7 @@ def test_required_identity_preserves_account_id(profile, legacy_enabled):
     headers = _codex_cloudflare_headers(_jwt())
 
     assert headers["originator"] == "hermes-agent"
-    assert headers["User-Agent"] == f"HermesAgent/{__version__}"
+    assert headers["User-Agent"] == f"NorualAgent/{__version__}"
     assert headers["ChatGPT-Account-ID"] == "acct-attribution-test"
     assert "ChatGPT-Account-ID" not in _codex_cloudflare_headers("not-a-jwt")
 
@@ -152,8 +152,8 @@ def test_new_identity_is_limited_to_the_official_endpoint(base_url, attributed):
 
     assert headers["originator"] == ("hermes-agent" if attributed else "codex_cli_rs")
     assert headers["User-Agent"] == (
-        f"HermesAgent/{__version__}"
-        if attributed else "codex_cli_rs/0.0.0 (Hermes Agent)"
+        f"NorualAgent/{__version__}"
+        if attributed else "codex_cli_rs/0.0.0 (Norual Agent)"
     )
 
 
@@ -193,7 +193,7 @@ def test_primary_client_and_credential_rebuild_send_expected_headers(
         agent.client.responses.create(model=MODEL, input="test")
         assert "originator" not in wire[-1].headers
         assert "chatgpt-account-id" not in wire[-1].headers
-        assert not wire[-1].headers["user-agent"].startswith("HermesAgent/")
+        assert not wire[-1].headers["user-agent"].startswith("NorualAgent/")
     finally:
         for client in clients:
             client.close()
@@ -262,7 +262,7 @@ def test_credential_pool_custom_endpoint_keeps_existing_identity(
         )
         assert wire[-1].url.host == "proxy.example"
         assert wire[-1].headers["originator"] == "codex_cli_rs"
-        assert wire[-1].headers["user-agent"] == "codex_cli_rs/0.0.0 (Hermes Agent)"
+        assert wire[-1].headers["user-agent"] == "codex_cli_rs/0.0.0 (Norual Agent)"
         assert wire[-1].headers["chatgpt-account-id"] == "acct-attribution-test"
     finally:
         client.close()
@@ -352,7 +352,7 @@ def test_required_identity_wins_over_configured_header_defaults(
         proxy.responses.create(model=MODEL, input="test")
         assert wire[-1].headers["originator"] == "codex_cli_rs"
         assert "custom-client" in wire[-1].headers.get_list("user-agent")
-        assert "HermesAgent/" not in wire[-1].headers["user-agent"]
+        assert "NorualAgent/" not in wire[-1].headers["user-agent"]
         assert wire[-1].headers["x-test-header"] == "preserved"
         assert "chatgpt-account-id" not in wire[-1].headers
     finally:

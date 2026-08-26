@@ -1,7 +1,7 @@
-"""On-demand worktree + branch reclaim (``hermes worktree`` / ``/worktree prune``).
+"""On-demand worktree + branch reclaim (``norual worktree`` / ``/worktree prune``).
 
 The startup pruner in ``cli._prune_stale_worktrees`` is deliberately
-conservative and silent: it runs before the banner on every ``hermes -w``
+conservative and silent: it runs before the banner on every ``norual -w``
 launch, so it only reaps clean, fully-merged scratch trees past an age tier
 and preserves everything else. That policy is correct for an unattended
 startup path — but it means real installs accumulate two kinds of debris the
@@ -212,7 +212,7 @@ def audit_worktrees(repo_root: str, *, with_sizes: bool = True) -> List[TreeReco
 
         lock_state = _cli._worktree_lock_is_live(repo_root, str(entry), timeout=5)
         if lock_state == "live":
-            rec("keep", "in use by a running hermes session")
+            rec("keep", "in use by a running norual session")
             continue
 
         tracked_dirty, untracked = _dirty_split(str(entry))

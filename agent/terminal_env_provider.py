@@ -112,7 +112,7 @@ class TerminalEnvironmentProvider(abc.ABC):
 
     @property
     def cache_path_base(self) -> Optional[str]:
-        """Base dir for synced Hermes cache files inside the backend."""
+        """Base dir for synced Norual cache files inside the backend."""
         return None
 
     @property
@@ -161,7 +161,7 @@ class TerminalEnvironmentProvider(abc.ABC):
         return ("needs_setup", f"{self.display_name} is not configured.")
 
     def setup_instructions(self) -> List[str]:
-        """Lines printed by ``hermes setup`` after this backend is selected.
+        """Lines printed by ``norual setup`` after this backend is selected.
 
         Use for token acquisition hints, SDK install commands, etc. The
         wizard persists ``terminal.backend`` itself; providers that need an
@@ -170,12 +170,12 @@ class TerminalEnvironmentProvider(abc.ABC):
         return []
 
     def post_setup(self) -> None:
-        """Optional interactive setup hook run by ``hermes setup`` after the
+        """Optional interactive setup hook run by ``norual setup`` after the
         backend is selected (prompt for tokens, install SDKs). Default no-op.
         """
 
     def doctor_checks(self) -> List[Tuple[bool, str, str]]:
-        """``hermes doctor`` rows: ``(ok, label, detail)`` triples.
+        """``norual doctor`` rows: ``(ok, label, detail)`` triples.
 
         Default: a single row reflecting :meth:`is_available`.
         """

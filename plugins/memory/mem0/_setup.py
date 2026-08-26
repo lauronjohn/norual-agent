@@ -319,7 +319,7 @@ def _setup_platform(hermes_home: str, config: dict, flags: dict[str, str]) -> No
         print(
             "\n  ⚠ MEM0_HOST is set in your environment "
             f"({os.environ['MEM0_HOST']}). It overrides platform mode — "
-            "remove it from ~/.hermes/.env (or unset it) or Hermes will keep "
+            "remove it from ~/.hermes/.env (or unset it) or Norual will keep "
             "routing to the self-hosted server."
         )
 
@@ -864,7 +864,7 @@ def _install_provider_deps(llm_id: str, embedder_id: str, vector_id: str) -> Non
         try:
             print(f"  Installing {dep}...")
             # Environment-aware install: sealed hosted venvs redirect to the
-            # durable data-volume target instead of /opt/hermes (NS-605).
+            # durable data-volume target instead of /opt/norual (NS-605).
             from tools.lazy_deps import install_specs
 
             outcome = install_specs([dep], timeout=60)
@@ -962,7 +962,7 @@ def _check_min_dep_version() -> None:
 
 
 def post_setup(hermes_home: str, config: dict) -> None:
-    """Entry point called by hermes memory setup framework.
+    """Entry point called by norual memory setup framework.
 
     Routes on --mode (platform / selfhosted / oss); with no flag it shows an
     interactive picker with all three modes. Platform keeps the framework's
